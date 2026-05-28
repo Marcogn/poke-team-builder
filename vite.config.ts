@@ -2,6 +2,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+/// <reference types="vitest" />
+
 // Base path is configurable via VITE_BASE_URL env var for GitHub Pages deploys.
 export default defineConfig({
   base: process.env.VITE_BASE_URL ?? '/',
@@ -50,4 +52,16 @@ export default defineConfig({
       },
     }),
   ],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    css: false,
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      include: ['src/utils/**', 'src/hooks/**', 'src/components/**'],
+    },
+  },
 });
