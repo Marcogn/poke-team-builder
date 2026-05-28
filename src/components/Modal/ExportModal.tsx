@@ -14,17 +14,23 @@ export function ExportModal({ open, onClose, team }: Props) {
   const exported = exportTeamToShowdown(team.members);
 
   async function handleCopy() {
-    await navigator.clipboard.writeText(exported);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(exported);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback: select textarea content
+      setCopied(false);
+    }
   }
 
   function handleDownload() {
+    const safeName = (team.name || 'team').replace(/[/\\:*?"<>|]/g, '_');
     const blob = new Blob([exported], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${team.name || 'team'}.txt`;
+    a.download = `${safeName}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   }
