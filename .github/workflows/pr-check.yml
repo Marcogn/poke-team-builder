@@ -1,11 +1,8 @@
-name: PR Checks
+name: PR Check
 
 on:
   pull_request:
     branches: [main]
-
-permissions:
-  contents: read
 
 jobs:
   test:
@@ -17,17 +14,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Run tests
-        run: npm run test -- --reporter=default --reporter=junit --outputFile=./test-results/junit.xml
-        env:
-          CI: 'true'
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: test-results/
-          if-no-files-found: ignore
+      - run: npm run test
 
   build-check:
     runs-on: ubuntu-latest
@@ -39,7 +26,5 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Build
-        run: VITE_BASE_URL=/ npm run build
-      - name: Verify dist
-        run: test -d dist && test -n "$(ls -A dist)"
+      - run: VITE_BASE_URL=/ npm run build
+      - run: test -d dist && test -n "$(ls -A dist)"

@@ -160,10 +160,13 @@ A Pokémon does not need to exist in PokéAPI to be used in a team.
 
 ### GitHub Pages Setup (one-time)
 
-1. Go to repo Settings → Pages → Source: Deploy from branch → `gh-pages`.
-2. Go to repo Settings → Variables → Actions → New repository variable:
-   Name: `REPO_NAME`, Value: your-repo-name (without slashes).
-3. Push to `main` — the Actions workflow handles the rest.
+1. Go to repo Settings → Pages → Source: GitHub Actions.
+2. Push to `main` — the workflow handles everything automatically.
+   No variables, no branch configuration needed.
+
+### URL
+
+https://marcogn.github.io/poke-team-builder/
 
 ### First Deploy Expected Behavior
 
@@ -180,8 +183,8 @@ npm run build && npm run preview
 ### Manual deployment
 
 ```bash
-VITE_BASE_URL=/<repo-name>/ npm run build
-# upload the contents of dist/ to the gh-pages branch
+VITE_BASE_URL=/poke-team-builder/ npm run build
+# upload the contents of dist/ as a GitHub Pages artifact
 ```
 
 The `public/.nojekyll` file is bundled so subdirectory assets are served
