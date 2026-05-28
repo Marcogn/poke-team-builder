@@ -15,8 +15,9 @@ const USER_DATA_KEY = 'teamdex_userdata';
  */
 function installFetchMock(extra?: Record<string, unknown>) {
   const handlers: Record<string, unknown> = {
-    // Type chart entries.
-    type_index: { results: [{ name: 'normal', url: '' }] },
+    // Type chart entries. The static mirror is id-indexed, so the type index
+    // must expose a numeric url segment.
+    type_index: { results: [{ name: 'normal', url: 'https://pokeapi.co/api/v2/type/1/' }] },
     type_detail: {
       damage_relations: {
         double_damage_to: [],
@@ -24,8 +25,8 @@ function installFetchMock(extra?: Record<string, unknown>) {
         no_damage_to: [],
       },
     },
-    // Pokémon index: a single Pokémon.
-    pokemon_index: { results: [{ name: 'bulbasaur', url: '' }] },
+    // Pokémon index: a single Pokémon, referenced by id.
+    pokemon_index: { results: [{ name: 'bulbasaur', url: 'https://pokeapi.co/api/v2/pokemon/1/' }] },
     pokemon_detail: {
       id: 1,
       name: 'bulbasaur',
@@ -39,7 +40,7 @@ function installFetchMock(extra?: Record<string, unknown>) {
       types: [{ slot: 1, type: { name: 'grass' } }],
       species: {
         name: 'bulbasaur',
-        url: 'https://pokeapi.co/api/v2/pokemon-species/bulbasaur/',
+        url: 'https://pokeapi.co/api/v2/pokemon-species/1/',
       },
     },
     species_detail: {
@@ -50,7 +51,7 @@ function installFetchMock(extra?: Record<string, unknown>) {
     evo_detail: {
       chain: { species: { name: 'bulbasaur' }, evolves_to: [] },
     },
-    move_index: { results: [{ name: 'tackle', url: '' }] },
+    move_index: { results: [{ name: 'tackle', url: 'https://pokeapi.co/api/v2/move/33/' }] },
     ...extra,
   };
 
@@ -59,11 +60,11 @@ function installFetchMock(extra?: Record<string, unknown>) {
     const url = String(input);
     callLog.push(url);
     let body: unknown = { results: [] };
-    if (/\/type\/[a-z-]+\/index\.json$/.test(url)) body = handlers.type_detail;
-    else if (/\/pokemon\/[a-z0-9-]+\/index\.json$/.test(url) && !url.endsWith('/pokemon/index.json'))
-      body = handlers.pokemon_detail;
+    if (url.endsWith('/type/index.json')) body = handlers.type_index;
+    else if (/\/type\/\d+\/index\.json$/.test(url)) body = handlers.type_detail;
     else if (url.endsWith('/pokemon/index.json')) body = handlers.pokemon_index;
-    else if (/pokemon-species\/[a-z0-9-]+\/index\.json$/.test(url)) body = handlers.species_detail;
+    else if (/\/pokemon\/\d+\/index\.json$/.test(url)) body = handlers.pokemon_detail;
+    else if (/pokemon-species\/\d+\/index\.json$/.test(url)) body = handlers.species_detail;
     else if (/evolution-chain\/\d+\/index\.json$/.test(url)) body = handlers.evo_detail;
     else if (url.endsWith('/move/index.json')) body = handlers.move_index;
     if (extra?.['__failUrl'] && url.includes(String(extra['__failUrl']))) {
@@ -181,7 +182,7 @@ describe('usePokemonData — resetCache action', () => {
 describe('usePokemonData — individual fetch failure', () => {
   it('logs a console.warn and completes the rest of the load', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    installFetchMock({ __failUrl: '/pokemon/bulbasaur/index.json' });
+    installFetchMock({ __failUrl: '/pokemon/1/index.json' });
     const { result } = renderHook(() => usePokemonData());
     await waitFor(() => expect(result.current.loading).toBe(false), { timeout: 5000 });
     expect(result.current.error).toBeNull();
@@ -205,7 +206,7 @@ describe('usePokemonData — lazy move details', () => {
     const fetchSpy = globalThis.fetch as unknown as ReturnType<typeof vi.fn>;
     fetchSpy.mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input);
-      if (/\/move\/tackle\/index\.json$/.test(url)) {
+      if (/\/move\/\d+\/index\.json$/.test(url)) {
         return {
           ok: true,
           status: 200,
@@ -221,8 +222,16 @@ describe('usePokemonData — lazy move details', () => {
       if (url.endsWith('/pokemon/index.json'))
         return { ok: true, status: 200, json: async () => ({ results: [] }) } as Response;
       if (url.endsWith('/move/index.json'))
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            results: [{ name: 'tackle', url: 'https://pokeapi.co/api/v2/move/33/' }],
+          }),
+        } as Response;
+      if (url.endsWith('/type/index.json'))
         return { ok: true, status: 200, json: async () => ({ results: [] }) } as Response;
-      if (/\/type\/[a-z-]+\/index\.json$/.test(url))
+      if (/\/type\/\d+\/index\.json$/.test(url))
         return {
           ok: true,
           status: 200,
