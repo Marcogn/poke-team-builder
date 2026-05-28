@@ -118,3 +118,36 @@ export function parseShowdownTeam(
     .filter(Boolean)
     .map((b) => parseShowdownBlock(b, resolveMove, resolveTypes));
 }
+
+export interface ImportError {
+  kind: 'unknown_species';
+  name: string;
+}
+
+export interface ImportResult {
+  members: ImportedMember[];
+  errors: ImportError[];
+}
+
+/**
+ * Higher-level import that drops blocks whose species cannot be resolved
+ * and surfaces them as `errors`. The UI should render an error toast and
+ * leave the team slots untouched for the dropped entries.
+ */
+export function importShowdownTeam(
+  text: string,
+  resolveMove: (name: string) => PokemonMove | null,
+  resolveTypes: (speciesName: string) => [PokemonType, PokemonType | null] | null,
+): ImportResult {
+  const blocks = parseShowdownTeam(text, resolveMove, resolveTypes);
+  const members: ImportedMember[] = [];
+  const errors: ImportError[] = [];
+  for (const b of blocks) {
+    if (b.speciesKnown) {
+      members.push(b);
+    } else {
+      errors.push({ kind: 'unknown_species', name: b.speciesName });
+    }
+  }
+  return { members, errors };
+}

@@ -158,3 +158,33 @@ describe('showdownParser — import', () => {
     expect(result[0].member.moves.every((m) => m === null)).toBe(true);
   });
 });
+
+describe('showdownParser — unknown species handling', () => {
+  // Import the higher-level API lazily so we don't break the older import line.
+  it('importShowdownTeam: unknown species yields no slot but an error entry', async () => {
+    const { importShowdownTeam } = await import('../showdownParser');
+    const text = ['Fakemon @ ', 'Ability: ', '- Tackle'].join('\n');
+    const result = importShowdownTeam(text, resolveMove, resolveTypes);
+    expect(result.members).toHaveLength(0);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0]).toEqual({ kind: 'unknown_species', name: 'Fakemon' });
+  });
+
+  it('importShowdownTeam: 3-block paste with one unknown — slots 1 and 3 imported, slot 2 dropped', async () => {
+    const { importShowdownTeam } = await import('../showdownParser');
+    const block = (name: string, move: string) =>
+      [`${name} @ `, 'Ability: ', `- ${move}`].join('\n');
+    const text = [
+      block('Pikachu', 'Thunderbolt'),
+      block('Fakemon', 'Tackle'),
+      block('Charizard', 'Flamethrower'),
+    ].join('\n\n');
+    const result = importShowdownTeam(text, resolveMove, resolveTypes);
+    expect(result.members.map((m) => m.member.speciesName)).toEqual([
+      'Pikachu',
+      'Charizard',
+    ]);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].name).toBe('Fakemon');
+  });
+});

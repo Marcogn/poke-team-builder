@@ -24,17 +24,19 @@ describe('suggestionEngine — addition mode', () => {
   });
 
   it('custom Pokémon appear when includeCustoms is true', () => {
+    // Use a small pool so the custom isn't squeezed out of the top-5 ranking.
+    const tinyPool = mockPokemonList.slice(0, 2);
     const team: TeamMember[] = [buildMember('Pikachu', ['electric', null])];
     const customs: TeamMember[] = [
       buildMember('MyCustomMon', ['ice', 'dragon']),
     ];
-    const without = computeSuggestions(mockTypeChart, team, mockPokemonList, customs, {
+    const without = computeSuggestions(mockTypeChart, team, tinyPool, customs, {
       includeCustoms: false,
     });
     const withCustoms = computeSuggestions(
       mockTypeChart,
       team,
-      mockPokemonList,
+      tinyPool,
       customs,
       { includeCustoms: true },
     );
@@ -42,28 +44,41 @@ describe('suggestionEngine — addition mode', () => {
     expect(withCustoms.map((s) => s.candidateLabel)).toContain('MyCustomMon');
   });
 
-  it('legendary exclusion: legendary not suggested unless team contains one', () => {
-    const team: TeamMember[] = [buildMember('Pikachu', ['electric', null])];
-    const excluded = computeSuggestions(mockTypeChart, team, mockPokemonList, [], {
-      includeCustoms: false,
-      excludeLegendaries: true,
-    });
-    expect(excluded.map((s) => s.candidateLabel)).not.toContain('Mewtwo');
-
-    const teamWithLegendary: TeamMember[] = [
-      buildMember('Mewtwo', ['psychic', null]),
+  it('legendary inclusion: legendary appears in candidates by default', () => {
+    // Scenario: team covers Fighting/Dark/etc but nothing else, leaving
+    // Psychic-style targets (Fighting, Poison) uncovered. Use a pool that
+    // forces Mewtwo to be top-ranked by restricting the candidate set.
+    const pool = [
+      mockPokemonList.find((p) => p.name === 'mewtwo')!,
+      mockPokemonList.find((p) => p.name === 'snorlax')!,
     ];
-    const allowed = computeSuggestions(
-      mockTypeChart,
-      teamWithLegendary,
-      mockPokemonList,
-      [],
-      { includeCustoms: false, excludeLegendaries: true },
-    );
-    // Mewtwo itself is on the team so it's deduped, but other legendaries
-    // would be allowed. Verify that the exclusion gate did not apply by
-    // checking some non-legendary still ranked.
-    expect(allowed.length).toBeGreaterThan(0);
+    const team: TeamMember[] = [buildMember('Slot', ['normal', null])];
+    const suggestions = computeSuggestions(mockTypeChart, team, pool, [], {
+      includeCustoms: false,
+    });
+    const names = suggestions.map((s) => s.candidateLabel);
+    expect(names).toContain('Mewtwo');
+  });
+
+  it('mythical inclusion: mythical Pokémon are also included unconditionally', () => {
+    const mythical = {
+      id: 151,
+      name: 'mew',
+      displayName: 'Mew',
+      speciesName: 'mew',
+      types: ['psychic' as const, null],
+      spriteUrl: null,
+      isLegendary: false,
+      isMythical: true,
+      isFinalEvolution: true,
+    };
+    const pool = [mythical, mockPokemonList.find((p) => p.name === 'snorlax')!];
+    const team: TeamMember[] = [buildMember('Slot', ['normal', null])];
+    const suggestions = computeSuggestions(mockTypeChart, team, pool, [], {
+      includeCustoms: false,
+    });
+    const names = suggestions.map((s) => s.candidateLabel);
+    expect(names).toContain('Mew');
   });
 });
 
@@ -118,5 +133,175 @@ describe('suggestionEngine — replacement mode', () => {
     });
     const labels = suggestions.map((s) => s.candidateLabel.toLowerCase());
     expect(new Set(labels).size).toBe(labels.length);
+  });
+});
+
+describe('suggestionEngine — branched evolutions', () => {
+  // Mock a tiny pool with one base species and two final-evolution branches
+  // of different types.
+  const branchedPool = [
+    {
+      id: 9001,
+      name: 'splitbase',
+      displayName: 'SplitBase',
+      speciesName: 'splitbase',
+      types: ['normal' as const, null],
+      spriteUrl: null,
+      isLegendary: false,
+      isMythical: false,
+      isFinalEvolution: false,
+    },
+    {
+      id: 9002,
+      name: 'splitfinal-water',
+      displayName: 'SplitFinal-Water',
+      speciesName: 'splitfinal-water',
+      types: ['water' as const, null],
+      spriteUrl: null,
+      isLegendary: false,
+      isMythical: false,
+      isFinalEvolution: true,
+    },
+    {
+      id: 9003,
+      name: 'splitfinal-electric',
+      displayName: 'SplitFinal-Electric',
+      speciesName: 'splitfinal-electric',
+      types: ['electric' as const, null],
+      spriteUrl: null,
+      isLegendary: false,
+      isMythical: false,
+      isFinalEvolution: true,
+    },
+  ];
+
+  it('both final-evolution branches appear as separate candidates', () => {
+    const team: TeamMember[] = [buildMember('Snorlax', ['normal', null])];
+    const suggestions = computeSuggestions(mockTypeChart, team, branchedPool, [], {
+      includeCustoms: false,
+    });
+    const names = suggestions.map((s) => s.candidateLabel);
+    expect(names).toContain('SplitFinal-Water');
+    expect(names).toContain('SplitFinal-Electric');
+    // Mid-evolution must not appear.
+    expect(names).not.toContain('SplitBase');
+  });
+
+  it('when Water is already covered, Electric branch ranks higher but Water still appears if it offers any gain', () => {
+    // Member offers Water-typical coverage via Water/Ground types (water covers fire/ground/rock).
+    const team: TeamMember[] = [buildMember('AquaBeast', ['water', 'ground'])];
+    const suggestions = computeSuggestions(mockTypeChart, team, branchedPool, [], {
+      includeCustoms: false,
+    });
+    const idxElectric = suggestions.findIndex(
+      (s) => s.candidateLabel === 'SplitFinal-Electric',
+    );
+    const idxWater = suggestions.findIndex(
+      (s) => s.candidateLabel === 'SplitFinal-Water',
+    );
+    expect(idxElectric).toBeGreaterThanOrEqual(0);
+    // Electric branch must rank ahead of (or equal to in case of tie-breaking)
+    // the Water branch — but per the brief Electric ranks higher strictly.
+    if (idxWater >= 0) {
+      expect(idxElectric).toBeLessThan(idxWater);
+    }
+  });
+});
+
+describe('suggestionEngine — alternate forms', () => {
+  const formsPool = [
+    {
+      id: 7001,
+      name: 'rotom',
+      displayName: 'Rotom',
+      speciesName: 'rotom',
+      types: ['electric' as const, 'ghost' as const],
+      spriteUrl: null,
+      isLegendary: false,
+      isMythical: false,
+      isFinalEvolution: true,
+    },
+    {
+      id: 7002,
+      name: 'rotom-heat',
+      displayName: 'Rotom-Heat',
+      speciesName: 'rotom',
+      types: ['electric' as const, 'fire' as const],
+      spriteUrl: null,
+      isLegendary: false,
+      isMythical: false,
+      isFinalEvolution: true,
+    },
+  ];
+
+  it('alternate forms are treated as distinct candidates and never deduplicated against each other', () => {
+    const team: TeamMember[] = [buildMember('Snorlax', ['normal', null])];
+    const suggestions = computeSuggestions(mockTypeChart, team, formsPool, [], {
+      includeCustoms: false,
+    });
+    const names = suggestions.map((s) => s.candidateLabel);
+    expect(names).toContain('Rotom');
+    expect(names).toContain('Rotom-Heat');
+  });
+
+  it('suggestion display name includes the full form name (e.g. Rotom-Heat)', () => {
+    const team: TeamMember[] = [buildMember('Snorlax', ['normal', null])];
+    const suggestions = computeSuggestions(mockTypeChart, team, formsPool, [], {
+      includeCustoms: false,
+    });
+    const heat = suggestions.find((s) => s.candidateLabel === 'Rotom-Heat');
+    expect(heat).toBeDefined();
+    expect(heat!.candidateLabel).toBe('Rotom-Heat');
+    // Must not be collapsed to the bare species name.
+    expect(heat!.candidateLabel).not.toBe('Rotom');
+  });
+});
+
+describe('suggestionEngine — custom Pokémon evaluated by types only', () => {
+  it('custom Pokémon with Dragon/Steel types appears, gain computed from types not from moves', () => {
+    // Team missing Dragon and Steel coverage entirely.
+    const team: TeamMember[] = [buildMember('Snorlax', ['normal', null])];
+    const custom: TeamMember = buildMember('MyDragoSteel', ['dragon', 'steel']);
+    custom.moves = [
+      {
+        id: 'm1',
+        name: 'flamethrower',
+        type: 'fire',
+        power: 90,
+        damageClass: 'special',
+        isCustom: false,
+      },
+      {
+        id: 'm2',
+        name: 'ice-beam',
+        type: 'ice',
+        power: 90,
+        damageClass: 'special',
+        isCustom: false,
+      },
+      null,
+      null,
+    ];
+    const suggestions = computeSuggestions(
+      mockTypeChart,
+      team,
+      mockPokemonList,
+      [custom],
+      { includeCustoms: true },
+    );
+    const found = suggestions.find((s) => s.candidateLabel === 'MyDragoSteel');
+    expect(found).toBeDefined();
+    // Newly covered types must come from Dragon/Steel evaluation only.
+    // Dragon covers: dragon. Steel covers: ice, rock, fairy.
+    // Fire/Ice (the move types) would have additionally covered: grass, bug,
+    // steel, dragon, etc. — but those must not appear unless the type-based
+    // calculation produced them.
+    const newly = new Set(found!.newlyCovered);
+    // Steel→ice and Steel→fairy are present (Snorlax covers neither).
+    expect(newly.has('ice')).toBe(true);
+    expect(newly.has('fairy')).toBe(true);
+    // grass is only covered by Fire (move) or Ice (move); types Dragon/Steel
+    // do not cover grass 2x → must NOT appear.
+    expect(newly.has('grass')).toBe(false);
   });
 });

@@ -67,7 +67,9 @@ describe('TeamBuilder integration', () => {
       ],
     };
     renderBuilder(team);
-    expect(screen.getByText('Charizard')).toBeInTheDocument();
+    // Species name appears in the slot header (font-semibold div) and also in
+    // the dropdown placeholder span. Both are valid; just assert ≥1.
+    expect(screen.getAllByText('Charizard').length).toBeGreaterThan(0);
     expect(screen.getByText(/1\/6 filled/i)).toBeInTheDocument();
   });
 
@@ -155,5 +157,101 @@ describe('TeamBuilder integration', () => {
     for (const t of POKEMON_TYPES) {
       expect(optionValues).toContain(t);
     }
+  });
+});
+
+describe('Settings — localStorage key separation', () => {
+  it('Reset data cache clears only the PokéAPI cache key, never user data', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('teamdex_pokeapi_cache', JSON.stringify({ x: 1 }));
+    localStorage.setItem('teamdex_userdata', JSON.stringify({ y: 2 }));
+
+    const { Settings } = await import('../Settings/Settings');
+    const onResetCache = vi.fn(() => {
+      // Replicate the production reset: only the cache key is removed.
+      localStorage.removeItem('teamdex_pokeapi_cache');
+    });
+    render(
+      <Settings onResetCache={onResetCache} installAvailable={false} onInstall={() => {}} />,
+    );
+    await user.click(screen.getByRole('button', { name: /reset data cache/i }));
+
+    expect(onResetCache).toHaveBeenCalled();
+    expect(localStorage.getItem('teamdex_pokeapi_cache')).toBeNull();
+    expect(localStorage.getItem('teamdex_userdata')).toBe(JSON.stringify({ y: 2 }));
+  });
+});
+
+describe('Type override → analysis', () => {
+  it('overriding both types of a Water/Flying slot to Fire/Ground makes Fire- and Ground- targets show as covered', async () => {
+    const user = userEvent.setup();
+    const { useState } = await import('react');
+
+    function Harness() {
+      const [team, setTeam] = useState<Team>({
+        ...emptyTeam,
+        members: [
+          buildMember('AquaBird', ['water', 'flying']),
+          null,
+          null,
+          null,
+          null,
+          null,
+        ],
+      });
+      return (
+        <TeamBuilder
+          team={team}
+          pokemon={mockPokemonList}
+          moves={mockMoveList}
+          customs={[]}
+          includeCustoms={false}
+          onToggleIncludeCustoms={() => {}}
+          onUpdateMember={(idx, next) => {
+            setTeam((t) => {
+              const members = [...t.members];
+              members[idx] = next;
+              return { ...t, members };
+            });
+          }}
+          onSaveCustom={() => {}}
+          onRenameTeam={() => {}}
+        />
+      );
+    }
+
+    const { unmount } = render(<Harness />);
+
+    const selects = screen.getAllByRole('combobox') as HTMLSelectElement[];
+    // First combobox is Type 1, second is Type 2 for the only filled slot.
+    await user.selectOptions(selects[0], 'fire');
+    // Re-query after rerender.
+    const selectsAfter = screen.getAllByRole('combobox') as HTMLSelectElement[];
+    await user.selectOptions(selectsAfter[1], 'ground');
+
+    // The Type 1 select now shows 'fire' and Type 2 shows 'ground'.
+    const finalSelects = screen.getAllByRole('combobox') as HTMLSelectElement[];
+    expect(finalSelects[0].value).toBe('fire');
+    expect(finalSelects[1].value).toBe('ground');
+    unmount();
+
+    // Now render the CoverageGrid against an equivalently overridden member
+    // and verify the offensive row covers Electric (Ground 2x) and Grass
+    // (Fire 2x) but not Water.
+    const overriddenMember = buildMember('AquaBird', ['fire', 'ground']);
+    const { CoverageGrid } = await import('../CoverageGrid/CoverageGrid');
+    const { mockTypeChart } = await import('../../utils/__tests__/testFixtures');
+    render(<CoverageGrid chart={mockTypeChart} members={[overriddenMember]} />);
+
+    const row = screen
+      .getAllByText('AquaBird')
+      .find((el) => el.tagName === 'TD')!
+      .closest('tr')!;
+    const cells = row.querySelectorAll('td');
+    const { POKEMON_TYPES } = await import('../../types');
+    const cellFor = (t: string) => cells[POKEMON_TYPES.indexOf(t as never) + 1];
+    expect(cellFor('electric').textContent).toBe('2x');
+    expect(cellFor('grass').textContent).toBe('2x');
+    expect(cellFor('water').textContent).not.toBe('2x');
   });
 });

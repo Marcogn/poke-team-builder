@@ -4,7 +4,7 @@ import {
   TeamMember,
   TypeChart,
 } from '../types';
-import { analyseTeam, offensiveCoverageForMember } from './coverageEngine';
+import { analyseTeam, offensiveCoverageForMember } from '../utils/coverageEngine';
 
 export interface Suggestion {
   kind: 'add' | 'replace';

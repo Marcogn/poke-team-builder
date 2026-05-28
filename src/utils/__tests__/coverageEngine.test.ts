@@ -173,3 +173,69 @@ describe('coverageEngine — defensiveProfile & sharedWeaknesses', () => {
     expect(shared).toContain('rock');
   });
 });
+
+describe('coverageEngine — type overrides', () => {
+  it('overriding types changes the offensive coverage', () => {
+    // Original Water/Flying → covers fire, ground, rock (water) + fighting, bug, grass (flying)
+    const original = buildMember('Slot', ['water', 'flying']);
+    const overridden = buildMember('Slot', ['fire', 'ground']);
+    overridden.id = original.id;
+    const covOriginal = offensiveCoverageForMember(mockTypeChart, original, false);
+    const covOverridden = offensiveCoverageForMember(mockTypeChart, overridden, false);
+
+    // Fire/Ground covers electric (Ground 2x electric); Water/Flying does not.
+    expect(covOverridden.has('electric')).toBe(true);
+    expect(covOriginal.has('electric')).toBe(false);
+    // Water/Flying covers fighting (Flying 2x fighting); Fire/Ground does not.
+    expect(covOriginal.has('fighting')).toBe(true);
+    expect(covOverridden.has('fighting')).toBe(false);
+  });
+
+  it('overriding one type removes that original type from coverage output', () => {
+    // Start as Water/Flying, override type 1 to Grass → Grass/Flying.
+    const member = buildMember('Slot', ['grass', 'flying']);
+    const cov = offensiveCoverageForMember(mockTypeChart, member, false);
+    // Original (Water) hit Fire SE; with Grass replacing Water, Fire should
+    // not appear in coverage anymore (Grass is 0.5x vs Fire).
+    expect(cov.has('fire')).toBe(false);
+    // Grass-typical coverage should be present (rock via grass 2x).
+    expect(cov.has('rock')).toBe(true);
+  });
+});
+
+describe('coverageEngine — custom Pokémon type-only evaluation', () => {
+  it('coverage of a candidate uses types only, even when moves are present', () => {
+    const custom: TeamMember = buildMember('CustomMon', ['steel', 'fairy']);
+    custom.moves = [
+      {
+        id: 'm1',
+        name: 'fire-blast',
+        type: 'fire',
+        power: 110,
+        damageClass: 'special',
+        isCustom: false,
+      },
+      {
+        id: 'm2',
+        name: 'earthquake',
+        type: 'ground',
+        power: 100,
+        damageClass: 'physical',
+        isCustom: false,
+      },
+      null,
+      null,
+    ];
+    // Candidates in the suggestion engine are always evaluated with
+    // useMoves=false, so Fire and Ground from the saved moves must not appear.
+    const cov = offensiveCoverageForMember(mockTypeChart, custom, false);
+    expect(cov.has('fire')).toBe(false);
+    expect(cov.has('ground')).toBe(false);
+    // But Steel-typical coverage (ice, rock, fairy) and Fairy-typical
+    // coverage (fighting, dragon, dark) should be present.
+    expect(cov.has('ice')).toBe(true);
+    expect(cov.has('rock')).toBe(true);
+    expect(cov.has('dragon')).toBe(true);
+    expect(cov.has('dark')).toBe(true);
+  });
+});
