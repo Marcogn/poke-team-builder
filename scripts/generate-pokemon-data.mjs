@@ -21,6 +21,17 @@ const BATCH_SIZE = 20;
 const BATCH_DELAY_MS = 200;
 const RETRY_DELAY_MS = 1000;
 
+/**
+ * NOTE: The runtime hook (usePokemonData.ts) uses the static GitHub mirror
+ * (raw.githubusercontent.com/PokeAPI/api-data) with 50-item batches and 50ms
+ * delays. This generation script intentionally uses the live PokeAPI endpoint
+ * with smaller batches (20) and longer delays (200ms) because:
+ * - It runs once offline, not in the browser on every first visit
+ * - The live API returns data by name (simpler URL construction)
+ * - The static mirror uses numeric IDs requiring an extra index lookup
+ * The output format is identical regardless of data source.
+ */
+
 const POKEMON_TYPES = [
   'normal', 'fire', 'water', 'electric', 'grass', 'ice',
   'fighting', 'poison', 'ground', 'flying', 'psychic', 'bug',
@@ -154,6 +165,13 @@ async function generate() {
 
   console.log(`\nFound ${finalEvolutions.size} final evolutions.\n`);
 
+  if (finalEvolutions.size === 0) {
+    throw new Error(
+      'No final evolutions found — evolution chain fetches likely all failed. ' +
+      'Cannot generate valid data without evolution information.',
+    );
+  }
+
   // 5. Fetch type chart
   console.log('Fetching type chart...');
   const typeChart = {};
@@ -163,7 +181,7 @@ async function generate() {
   }
 
   const typeResults = await processInBatches(
-    POKEMON_TYPES.filter((t) => t !== 'unknown' && t !== 'shadow'),
+    POKEMON_TYPES,
     async (typeName) => {
       const data = await fetchWithRetry(`${POKEAPI_BASE}/type/${typeName}`);
       return { typeName, data };
@@ -206,7 +224,7 @@ async function generate() {
         spriteDefault: p.sprites?.front_default ?? null,
         isLegendary: flags?.legendary ?? false,
         isMythical: flags?.mythical ?? false,
-        isFinalEvolution: finalEvolutions.size === 0 ? true : finalEvolutions.has(p.species.name),
+        isFinalEvolution: finalEvolutions.has(p.species.name),
       };
     })
     .sort((a, b) => a.id - b.id);

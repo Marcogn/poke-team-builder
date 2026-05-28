@@ -1,5 +1,5 @@
 {
-  "generatedAt": null,
+  "generatedAt": "PLACEHOLDER — run `npm run generate-data` to populate",
   "pokemon": [],
   "typeChart": {}
 }
