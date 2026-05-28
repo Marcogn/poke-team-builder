@@ -4,18 +4,18 @@ import { buildMember, mockPokemonList, mockTypeChart } from '../../utils/__tests
 import { TeamMember } from '../../types';
 
 describe('suggestionEngine — ranking by coverage gain', () => {
-  it('candidates are sorted by gain descending in addition mode', () => {
+  it('candidates are sorted by compositeScore descending in addition mode', () => {
     const team: TeamMember[] = [buildMember('Pikachu', ['electric', null])];
     const suggestions = computeSuggestions(mockTypeChart, team, mockPokemonList, [], {
       includeCustoms: false,
     });
     expect(suggestions.length).toBeGreaterThan(1);
     for (let i = 1; i < suggestions.length; i++) {
-      expect(suggestions[i - 1].gain).toBeGreaterThanOrEqual(suggestions[i].gain);
+      expect(suggestions[i - 1].compositeScore).toBeGreaterThanOrEqual(suggestions[i].compositeScore);
     }
   });
 
-  it('candidates are sorted by gain descending in replacement mode', () => {
+  it('candidates are sorted by compositeScore descending in replacement mode', () => {
     const team: TeamMember[] = [
       buildMember('Charizard', ['fire', 'flying']),
       buildMember('Gyarados', ['water', 'flying']),
@@ -29,12 +29,12 @@ describe('suggestionEngine — ranking by coverage gain', () => {
     });
     expect(suggestions.length).toBeGreaterThan(1);
     for (let i = 1; i < suggestions.length; i++) {
-      expect(suggestions[i - 1].gain).toBeGreaterThanOrEqual(suggestions[i].gain);
+      expect(suggestions[i - 1].compositeScore).toBeGreaterThanOrEqual(suggestions[i].compositeScore);
     }
   });
 
-  it('secondary sort: when gain is equal, lower ID comes first (more iconic)', () => {
-    // Build a team that makes multiple candidates have identical gain
+  it('secondary sort: when compositeScore is equal, lower ID comes first (more iconic)', () => {
+    // Build a team that makes multiple candidates have identical compositeScore
     const team: TeamMember[] = [
       buildMember('Pikachu', ['electric', null]),
       buildMember('Charizard', ['fire', 'flying']),
@@ -46,9 +46,9 @@ describe('suggestionEngine — ranking by coverage gain', () => {
       includeCustoms: false,
     });
 
-    // Among suggestions with the same gain, verify id-based secondary sort
+    // Among suggestions with the same compositeScore, verify id-based secondary sort
     for (let i = 1; i < suggestions.length; i++) {
-      if (suggestions[i - 1].gain === suggestions[i].gain) {
+      if (suggestions[i - 1].compositeScore === suggestions[i].compositeScore) {
         const prevEntry = mockPokemonList.find(
           (p) => p.displayName === suggestions[i - 1].candidateLabel,
         );
@@ -65,21 +65,11 @@ describe('suggestionEngine — ranking by coverage gain', () => {
     }
   });
 
-  it('verifies primary sort is by gain, not dex order', () => {
+  it('verifies primary sort is by compositeScore, not dex order', () => {
     const team: TeamMember[] = [buildMember('Pikachu', ['electric', null])];
     const suggestions = computeSuggestions(mockTypeChart, team, mockPokemonList, [], {
       includeCustoms: false,
     });
-    // If sorted by ID, the candidate IDs would be in ascending order.
-    // With gain-based sort, this should NOT always be the case.
-    const candidateIds = suggestions.map((s) => {
-      const entry = mockPokemonList.find((p) => p.displayName === s.candidateLabel);
-      return entry?.id ?? Infinity;
-    });
-    const isSortedById = candidateIds.every((id, i) => i === 0 || candidateIds[i - 1] <= id);
-    // It's possible but very unlikely that gain sort happens to match ID sort
-    // for a diverse pool. If it does match, the test isn't broken — just less assertive.
-    // The main assertion is the gain-descending check in the tests above.
-    expect(suggestions[0].gain).toBeGreaterThanOrEqual(suggestions[suggestions.length - 1].gain);
+    expect(suggestions[0].compositeScore).toBeGreaterThanOrEqual(suggestions[suggestions.length - 1].compositeScore);
   });
 });

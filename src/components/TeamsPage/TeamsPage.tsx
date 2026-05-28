@@ -64,13 +64,13 @@ export function TeamsPage({ teams, onSelectTeam, onCreateEmpty, onImport, onRena
             <span className="text-xs text-slate-400">
               {t.members.filter(Boolean).length}/6
             </span>
-            <div className="flex gap-1">
+            <div className="flex flex-wrap gap-0.5">
               {Array.from({ length: 6 }).map((_, i) => {
                 const m = t.members[i];
                 return m?.spriteUrl ? (
-                  <img key={i} src={m.spriteUrl} alt="" className="w-6 h-6 object-contain" />
+                  <img key={i} src={m.spriteUrl} alt="" className="w-7 h-7 object-contain" />
                 ) : (
-                  <div key={i} className="w-6 h-6 rounded-full bg-panel2" />
+                  <div key={i} className="w-7 h-7 rounded-full bg-panel2" />
                 );
               })}
             </div>
