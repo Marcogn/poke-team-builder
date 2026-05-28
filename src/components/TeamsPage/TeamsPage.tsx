@@ -65,7 +65,9 @@ export function TeamsPage({ teams, onSelectTeam, onCreateEmpty, onImport, onRena
             <span className="text-xs text-gray-500 dark:text-slate-400">
               {t.members.filter(Boolean).length}/6
             </span>
-            {/* Preview: only filled members, max 3 per row, centered (1, 2, 3, 3+1, 3+2, 3+3). */}
+            {/* Preview: only filled members, max 3 per row, centered (1, 2, 3, 3+1, 3+2, 3+3).
+                Width = 3 sprites (w-9 = 2.25rem) + 2 gaps (gap-1 = 0.25rem) = 7.25rem;
+                rounded to 7.5rem to leave a hair of breathing room. */}
             <div className="flex flex-wrap justify-center gap-1 mx-auto max-w-[7.5rem]">
               {t.members
                 .filter((m): m is NonNullable<typeof m> => m !== null)
