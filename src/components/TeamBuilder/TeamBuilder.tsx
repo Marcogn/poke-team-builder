@@ -6,6 +6,8 @@ interface Props {
   pokemon: PokemonEntry[];
   moves: MoveEntry[];
   customs: TeamMember[];
+  showMoves: boolean;
+  onShowMovesChange: (v: boolean) => void;
   onUpdateMember: (idx: number, m: TeamMember | null) => void;
   onSaveCustom: (m: TeamMember) => void;
   onRenameTeam: (name: string) => void;
@@ -16,6 +18,8 @@ export function TeamBuilder({
   pokemon,
   moves,
   customs,
+  showMoves,
+  onShowMovesChange,
   onUpdateMember,
   onSaveCustom,
   onRenameTeam,
@@ -32,6 +36,15 @@ export function TeamBuilder({
           {team.members.filter(Boolean).length}/6 filled
         </span>
       </div>
+      <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer select-none mb-4">
+        <input
+          type="checkbox"
+          checked={showMoves}
+          onChange={(e) => onShowMovesChange(e.target.checked)}
+          className="w-4 h-4 accent-purple-500"
+        />
+        Enable move slots
+      </label>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
         {team.members.map((m, i) => (
           <PokemonSlot
@@ -40,6 +53,7 @@ export function TeamBuilder({
             pokemon={pokemon}
             moves={moves}
             customs={customs}
+            showMoves={showMoves}
             onChange={(next) => onUpdateMember(i, next)}
             onSaveCustom={onSaveCustom}
             onClear={() => onUpdateMember(i, null)}

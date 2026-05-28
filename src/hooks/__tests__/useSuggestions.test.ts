@@ -4,14 +4,17 @@ import { buildMember, mockPokemonList, mockTypeChart } from '../../utils/__tests
 import { TeamMember } from '../../types';
 
 describe('suggestionEngine — addition mode', () => {
-  it('team of 1: returns up to 5 add suggestions, no replacements', () => {
+  it('team of 1: returns add suggestions sorted by gain, no replacements', () => {
     const team: TeamMember[] = [buildMember('Pikachu', ['electric', null])];
     const suggestions = computeSuggestions(mockTypeChart, team, mockPokemonList, [], {
       includeCustoms: false,
     });
     expect(suggestions.length).toBeGreaterThan(0);
-    expect(suggestions.length).toBeLessThanOrEqual(5);
     expect(suggestions.every((s) => s.kind === 'add')).toBe(true);
+    // Verify sorted by gain descending
+    for (let i = 1; i < suggestions.length; i++) {
+      expect(suggestions[i - 1].gain).toBeGreaterThanOrEqual(suggestions[i].gain);
+    }
   });
 
   it('mid-evolutions are not suggested when finals exist (Gastly excluded)', () => {

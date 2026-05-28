@@ -1,15 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { v4 as uuid } from 'uuid';
-import { AppState, Team, TeamMember } from './types';
+import { AppState, PokemonEntry, Team, TeamMember } from './types';
 import { usePokemonData } from './hooks/usePokemonData';
 import { useCoverageAnalysis } from './hooks/useCoverageAnalysis';
 import { useSuggestions } from './hooks/useSuggestions';
+import { Suggestion } from './hooks/suggestionEngine';
 import { TeamBuilder } from './components/TeamBuilder/TeamBuilder';
 import { CoverageGrid } from './components/CoverageGrid/CoverageGrid';
 import { SuggestionPanel } from './components/SuggestionPanel/SuggestionPanel';
 import { ImportExport } from './components/ImportExport/ImportExport';
 import { CustomRoster } from './components/CustomRoster/CustomRoster';
 import { Settings } from './components/Settings/Settings';
+import { resolveSpriteUrl } from './utils/spriteUtils';
 
 const STATE_KEY = 'teamdex_userdata';
 
@@ -45,6 +47,7 @@ export default function App() {
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [tab, setTab] = useState<'team' | 'analysis' | 'roster' | 'io' | 'settings'>('team');
+  const [showMoves, setShowMoves] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(STATE_KEY, JSON.stringify(state));
@@ -110,6 +113,50 @@ export default function App() {
 
   const canAnalyse = members.length > 0;
 
+  const applySuggestion = useCallback(
+    (s: Suggestion) => {
+      const entry = 'id' in s.candidate && typeof (s.candidate as PokemonEntry).name === 'string'
+        ? s.candidate as PokemonEntry
+        : null;
+      const newMember: TeamMember = {
+        id: uuid(),
+        speciesName: s.candidateLabel,
+        spriteUrl: entry ? resolveSpriteUrl(entry, 'card') : s.spriteUrl,
+        types: s.types,
+        moves: [null, null, null, null],
+        isCustomSaved: false,
+      };
+
+      if (s.kind === 'add') {
+        updateActiveTeam((t) => {
+          const membersCopy = [...t.members];
+          const emptyIdx = membersCopy.findIndex((m) => m === null);
+          const slotIdx = emptyIdx >= 0 ? emptyIdx : membersCopy.length;
+          if (slotIdx < 6) {
+            membersCopy[slotIdx] = newMember;
+          }
+          toast(`${s.candidateLabel} added to slot ${slotIdx + 1}`);
+          return { ...t, members: membersCopy };
+        });
+      } else {
+        // replace mode
+        updateActiveTeam((t) => {
+          const membersCopy = [...t.members];
+          const replaceIdx = membersCopy.findIndex(
+            (m) => m !== null && m.id === s.replacesMemberId,
+          );
+          if (replaceIdx >= 0) {
+            membersCopy[replaceIdx] = newMember;
+            toast(`${s.candidateLabel} replaced ${s.replacesName} in slot ${replaceIdx + 1}`);
+          }
+          return { ...t, members: membersCopy };
+        });
+      }
+      setTab('team');
+    },
+    [updateActiveTeam, toast],
+  );
+
   const newTeam = () => {
     const t = emptyTeam(`Team ${state.teams.length + 1}`);
     setState((s) => ({ ...s, teams: [...s.teams, t], activeTeamId: t.id }));
@@ -125,7 +172,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-bg text-slate-100">
       {/* Compact, single-row header. */}
-      <header className="flex items-center gap-3 px-4 py-2 bg-[#1a1a2e] border-b border-white/10 sticky top-0 z-20">
+      <header className="flex items-center gap-3 px-4 py-2 bg-[#1a1a2e] border-b border-white/10 sticky top-0 z-50">
         <span className="bg-accent text-white px-2 py-0.5 rounded text-sm font-bold">
           TD
         </span>
@@ -155,7 +202,7 @@ export default function App() {
         )}
       </header>
       {/* Nav bar — horizontally scrollable on narrow screens. */}
-      <nav className="flex gap-1 px-4 py-1 bg-[#1a1a2e] border-b border-white/10 overflow-x-auto sticky top-12 z-10">
+      <nav className="flex gap-1 px-4 py-1 bg-[#1a1a2e] border-b border-white/10 overflow-x-auto sticky top-[40px] z-50">
         {(['team', 'analysis', 'roster', 'io', 'settings'] as const).map((t) => (
           <button
             key={t}
@@ -215,6 +262,8 @@ export default function App() {
               pokemon={data.pokemon}
               moves={data.moves}
               customs={state.customPokemon}
+              showMoves={showMoves}
+              onShowMovesChange={setShowMoves}
               onUpdateMember={updateMember}
               onSaveCustom={saveCustom}
               onRenameTeam={(name) => updateActiveTeam((t) => ({ ...t, name }))}
@@ -269,6 +318,7 @@ export default function App() {
                   <SuggestionPanel
                     suggestions={suggestions}
                     mixedMovesNote={analysis.team.mixed}
+                    onApply={applySuggestion}
                   />
                 </section>
               </>
