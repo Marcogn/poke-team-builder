@@ -1,19 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
 import { v4 as uuid } from 'uuid';
-import { AppState, PokemonEntry, Team, TeamMember } from './types';
+import { AppSettings, AppState, AppView, PokemonEntry, Team, TeamMember } from './types';
 import { usePokemonData } from './hooks/usePokemonData';
-import { useCoverageAnalysis } from './hooks/useCoverageAnalysis';
-import { useSuggestions } from './hooks/useSuggestions';
 import { Suggestion } from './hooks/suggestionEngine';
-import { TeamBuilder } from './components/TeamBuilder/TeamBuilder';
-import { CoverageGrid } from './components/CoverageGrid/CoverageGrid';
-import { SuggestionPanel } from './components/SuggestionPanel/SuggestionPanel';
-import { ImportExport } from './components/ImportExport/ImportExport';
-import { CustomRoster } from './components/CustomRoster/CustomRoster';
-import { Settings } from './components/Settings/Settings';
+import { TeamsPage } from './components/TeamsPage/TeamsPage';
+import { TeamDetailPage } from './components/TeamDetailPage/TeamDetailPage';
+import { CustomPkmnPage } from './components/CustomRoster/CustomPkmnPage';
+import { SettingsPage } from './components/Settings/SettingsPage';
+import { parseShowdownTeam } from './utils/showdownParser';
 import { resolveSpriteUrl } from './utils/spriteUtils';
 
 const STATE_KEY = 'teamdex_userdata';
+
+const DEFAULT_SETTINGS: AppSettings = {
+  theme: 'system',
+  includeMegaDynamax: false,
+  excludeLegendaries: false,
+};
 
 function emptyTeam(name = 'New Team'): Team {
   return {
@@ -35,6 +38,22 @@ function loadAppState(): AppState {
   return { teams: [t], customPokemon: [], activeTeamId: t.id };
 }
 
+function applyTheme(theme: AppSettings['theme']) {
+  const html = document.documentElement;
+  if (theme === 'dark') {
+    html.classList.add('dark');
+  } else if (theme === 'light') {
+    html.classList.remove('dark');
+  } else {
+    // system
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      html.classList.add('dark');
+    } else {
+      html.classList.remove('dark');
+    }
+  }
+}
+
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
@@ -43,11 +62,27 @@ interface BeforeInstallPromptEvent extends Event {
 export default function App() {
   const data = usePokemonData();
   const [state, setState] = useState<AppState>(loadAppState);
+  const [view, setView] = useState<AppView>({ page: 'teams' });
   const [includeCustomsAnalysis, setIncludeCustomsAnalysis] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
-  const [tab, setTab] = useState<'team' | 'analysis' | 'roster' | 'io' | 'settings'>('team');
   const [showMoves, setShowMoves] = useState(false);
+
+  const settings: AppSettings = state.settings ?? DEFAULT_SETTINGS;
+
+  // Apply theme on boot and when settings change
+  useEffect(() => {
+    applyTheme(settings.theme);
+  }, [settings.theme]);
+
+  // Listen for system theme changes when in 'system' mode
+  useEffect(() => {
+    if (settings.theme !== 'system') return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = () => applyTheme('system');
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, [settings.theme]);
 
   useEffect(() => {
     localStorage.setItem(STATE_KEY, JSON.stringify(state));
@@ -67,27 +102,34 @@ export default function App() {
     window.setTimeout(() => setToastMsg(null), 2500);
   }, []);
 
-  const activeTeam = state.teams.find((t) => t.id === state.activeTeamId) ?? state.teams[0];
+  const updateSettings = useCallback((s: AppSettings) => {
+    setState((prev) => ({ ...prev, settings: s }));
+  }, []);
 
-  const updateActiveTeam = useCallback(
-    (mut: (t: Team) => Team) => {
+  const getTeam = useCallback(
+    (id: string) => state.teams.find((t) => t.id === id),
+    [state.teams],
+  );
+
+  const updateTeam = useCallback(
+    (teamId: string, mut: (t: Team) => Team) => {
       setState((s) => ({
         ...s,
-        teams: s.teams.map((t) => (t.id === s.activeTeamId ? mut(t) : t)),
+        teams: s.teams.map((t) => (t.id === teamId ? mut(t) : t)),
       }));
     },
     [],
   );
 
   const updateMember = useCallback(
-    (idx: number, m: TeamMember | null) => {
-      updateActiveTeam((t) => {
+    (teamId: string, idx: number, m: TeamMember | null) => {
+      updateTeam(teamId, (t) => {
         const members = [...t.members];
         members[idx] = m;
         return { ...t, members };
       });
     },
-    [updateActiveTeam],
+    [updateTeam],
   );
 
   const saveCustom = useCallback(
@@ -101,20 +143,76 @@ export default function App() {
     [toast],
   );
 
-  const members = activeTeam.members.filter((m): m is TeamMember => m !== null);
-  const analysis = useCoverageAnalysis(data.typeChart, members);
-  const suggestions = useSuggestions(
-    data.typeChart,
-    members,
-    data.pokemon,
-    state.customPokemon,
-    { includeCustoms: includeCustomsAnalysis },
-  );
+  const createEmptyTeam = useCallback(() => {
+    const t = emptyTeam(`Team ${state.teams.length + 1}`);
+    setState((s) => ({ ...s, teams: [...s.teams, t], activeTeamId: t.id }));
+    setView({ page: 'team', teamId: t.id, tab: 'pokemon' });
+  }, [state.teams.length]);
 
-  const canAnalyse = members.length > 0;
+  const handleImportTeam = useCallback((text: string) => {
+    const resolveMove = (name: string) => {
+      const found = data.moves.find((m) => m.displayName.toLowerCase() === name.toLowerCase());
+      if (!found) return null;
+      return {
+        id: 'imp-' + found.id,
+        name: found.displayName,
+        type: found.type,
+        power: found.power,
+        damageClass: found.damageClass,
+        isCustom: false,
+      };
+    };
+    const resolveTypes = (name: string) => {
+      const found = data.pokemon.find((p) => p.displayName.toLowerCase() === name.toLowerCase());
+      if (!found) return null;
+      return found.types;
+    };
+    const parsed = parseShowdownTeam(text, resolveMove, resolveTypes);
+    const skipped: string[] = [];
+    const accepted = parsed.filter((p) => {
+      if (!p.speciesKnown) {
+        skipped.push(p.speciesName);
+        return false;
+      }
+      return true;
+    });
+    const members: (TeamMember | null)[] = accepted.slice(0, 6).map((p) => {
+      const found = data.pokemon.find((pp) => pp.displayName.toLowerCase() === p.member.speciesName.toLowerCase());
+      return { ...p.member, spriteUrl: resolveSpriteUrl(found, 'card') };
+    });
+    while (members.length < 6) members.push(null);
+
+    const unknown = Array.from(new Set(accepted.flatMap((p) => p.unknownMoveNames)));
+    const t: Team = {
+      id: uuid(),
+      name: `Imported Team ${state.teams.length + 1}`,
+      members,
+      createdAt: Date.now(),
+    };
+    setState((s) => ({ ...s, teams: [...s.teams, t], activeTeamId: t.id }));
+    setView({ page: 'team', teamId: t.id, tab: 'pokemon' });
+
+    for (const name of skipped) {
+      toast(`Could not import ${name}: Pokémon not found in database. Skipping.`);
+    }
+    if (unknown.length > 0) {
+      toast(`Imported team. ${unknown.length} move(s) need type/power: ${unknown.join(', ')}`);
+    } else if (skipped.length === 0) {
+      toast('Imported team');
+    }
+  }, [data.moves, data.pokemon, state.teams.length, toast]);
+
+  const deleteTeam = useCallback((id: string) => {
+    setState((s) => {
+      const teams = s.teams.filter((t) => t.id !== id);
+      const next = teams.length === 0 ? [emptyTeam()] : teams;
+      return { ...s, teams: next, activeTeamId: next[0].id };
+    });
+    setView({ page: 'teams' });
+  }, []);
 
   const applySuggestion = useCallback(
-    (s: Suggestion) => {
+    (teamId: string, s: Suggestion) => {
       const entry = 'id' in s.candidate && typeof (s.candidate as PokemonEntry).name === 'string'
         ? s.candidate as PokemonEntry
         : null;
@@ -128,7 +226,7 @@ export default function App() {
       };
 
       if (s.kind === 'add') {
-        updateActiveTeam((t) => {
+        updateTeam(teamId, (t) => {
           const membersCopy = [...t.members];
           const emptyIdx = membersCopy.findIndex((m) => m === null);
           const slotIdx = emptyIdx >= 0 ? emptyIdx : membersCopy.length;
@@ -139,8 +237,7 @@ export default function App() {
           return { ...t, members: membersCopy };
         });
       } else {
-        // replace mode
-        updateActiveTeam((t) => {
+        updateTeam(teamId, (t) => {
           const membersCopy = [...t.members];
           const replaceIdx = membersCopy.findIndex(
             (m) => m !== null && m.id === s.replacesMemberId,
@@ -152,33 +249,20 @@ export default function App() {
           return { ...t, members: membersCopy };
         });
       }
-      setTab('team');
+      setView({ page: 'team', teamId, tab: 'pokemon' });
     },
-    [updateActiveTeam, toast],
+    [updateTeam, toast],
   );
 
-  const newTeam = () => {
-    const t = emptyTeam(`Team ${state.teams.length + 1}`);
-    setState((s) => ({ ...s, teams: [...s.teams, t], activeTeamId: t.id }));
-  };
-  const deleteTeam = (id: string) => {
-    setState((s) => {
-      const teams = s.teams.filter((t) => t.id !== id);
-      const next = teams.length === 0 ? [emptyTeam()] : teams;
-      return { ...s, teams: next, activeTeamId: next[0].id };
-    });
-  };
+  // Current team for detail page
+  const currentTeam = view.page === 'team' ? getTeam(view.teamId) : undefined;
 
   return (
     <div className="min-h-screen bg-bg text-slate-100">
-      {/* Compact, single-row header. */}
+      {/* Header */}
       <header className="flex items-center gap-3 px-4 py-2 bg-[#1a1a2e] border-b border-white/10 sticky top-0 z-50">
-        <span className="bg-accent text-white px-2 py-0.5 rounded text-sm font-bold">
-          TD
-        </span>
-        <span className="text-base font-semibold whitespace-nowrap">
-          Pokémon Team Analyzer
-        </span>
+        <span className="bg-accent text-white px-2 py-0.5 rounded text-sm font-bold">TD</span>
+        <span className="text-base font-semibold whitespace-nowrap">Pokémon Team Analyzer</span>
         <span
           className={`text-[10px] px-1.5 py-0.5 rounded ${
             data.version === 0 ? 'bg-red-700 text-red-100' : 'bg-panel2 text-slate-400'
@@ -201,49 +285,45 @@ export default function App() {
           </button>
         )}
       </header>
-      {/* Nav bar — horizontally scrollable on narrow screens. */}
-      <nav className="flex gap-1 px-4 py-1 bg-[#1a1a2e] border-b border-white/10 overflow-x-auto sticky top-[40px] z-50">
-        {(['team', 'analysis', 'roster', 'io', 'settings'] as const).map((t) => (
-          <button
-            key={t}
-            className={`px-3 py-1.5 rounded text-sm whitespace-nowrap ${
-              tab === t ? 'bg-accent' : 'hover:bg-panel2'
-            }`}
-            onClick={() => setTab(t)}
-          >
-            {t === 'io' ? 'Import/Export' : t.charAt(0).toUpperCase() + t.slice(1)}
-          </button>
-        ))}
+
+      {/* Nav */}
+      <nav className="flex gap-1 px-4 py-1 bg-[#1a1a2e] border-b border-white/10 sticky top-[40px] z-50">
+        <button
+          className={`px-3 py-1.5 rounded text-sm whitespace-nowrap ${
+            view.page === 'teams' || view.page === 'team' ? 'bg-accent' : 'hover:bg-panel2'
+          }`}
+          onClick={() => setView({ page: 'teams' })}
+        >
+          Teams
+        </button>
+        <button
+          className={`px-3 py-1.5 rounded text-sm whitespace-nowrap ${
+            view.page === 'custompkmn' ? 'bg-accent' : 'hover:bg-panel2'
+          }`}
+          onClick={() => setView({ page: 'custompkmn' })}
+        >
+          CustomPKMN
+        </button>
+        <button
+          className={`px-3 py-1.5 rounded text-sm whitespace-nowrap ${
+            view.page === 'settings' ? 'bg-accent' : 'hover:bg-panel2'
+          }`}
+          onClick={() => setView({ page: 'settings' })}
+        >
+          Settings
+        </button>
       </nav>
 
-      {/* Team switcher — moved out of the header for the compact layout. */}
-      <div className="max-w-6xl mx-auto px-4 pt-3 flex items-center gap-2 flex-wrap">
-        {state.teams.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setState((s) => ({ ...s, activeTeamId: t.id }))}
-            className={`text-xs px-2 py-1 rounded border ${
-              t.id === state.activeTeamId ? 'bg-accent border-accent' : 'border-panel2 hover:bg-panel2'
-            }`}
-          >
-            {t.name}
+      {/* Breadcrumb */}
+      {view.page === 'team' && currentTeam && (
+        <div className="max-w-6xl mx-auto px-4 pt-2 text-sm text-slate-400">
+          <button className="hover:text-slate-200 underline" onClick={() => setView({ page: 'teams' })}>
+            Teams
           </button>
-        ))}
-        <button
-          onClick={newTeam}
-          className="text-xs px-2 py-1 rounded bg-panel2 hover:bg-panel"
-        >
-          + New team
-        </button>
-        {state.teams.length > 1 && (
-          <button
-            onClick={() => deleteTeam(activeTeam.id)}
-            className="text-xs px-2 py-1 rounded text-red-300 hover:text-red-200"
-          >
-            Delete current
-          </button>
-        )}
-      </div>
+          <span className="mx-1">&gt;</span>
+          <span className="text-slate-200">{currentTeam.name}</span>
+        </div>
+      )}
 
       {data.error && (
         <div className="max-w-6xl mx-auto px-4 mt-4 bg-red-900/40 text-red-200 p-3 rounded text-sm">
@@ -252,83 +332,46 @@ export default function App() {
       )}
 
       <main className="max-w-6xl mx-auto px-4 py-4 flex flex-col gap-6">
-        {tab === 'team' && (
-          <>
-            {/* The 6 team slots always render once loading is done, regardless
-                of whether any slot is filled. Skeleton cards above are scoped
-                to the loading block only. */}
-            <TeamBuilder
-              team={activeTeam}
-              pokemon={data.pokemon}
-              moves={data.moves}
-              customs={state.customPokemon}
-              showMoves={showMoves}
-              onShowMovesChange={setShowMoves}
-              onUpdateMember={updateMember}
-              onSaveCustom={saveCustom}
-              onRenameTeam={(name) => updateActiveTeam((t) => ({ ...t, name }))}
-            />
-            <div className="flex items-center gap-3">
-              <button
-                disabled={!canAnalyse}
-                onClick={() => {
-                  setTab('analysis');
-                }}
-                className="px-4 py-2 rounded bg-accent disabled:bg-panel2 disabled:text-slate-500 hover:bg-violet-500 font-semibold"
-              >
-                Analyze
-              </button>
-              <label className="flex items-center gap-2 text-xs text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={includeCustomsAnalysis}
-                  onChange={(e) => setIncludeCustomsAnalysis(e.target.checked)}
-                />
-                Include custom Pokémon in suggestions
-              </label>
-            </div>
-          </>
+        {view.page === 'teams' && (
+          <TeamsPage
+            teams={state.teams}
+            onSelectTeam={(id) => setView({ page: 'team', teamId: id, tab: 'pokemon' })}
+            onCreateEmpty={createEmptyTeam}
+            onImport={handleImportTeam}
+            onRenameTeam={(id, name) => updateTeam(id, (t) => ({ ...t, name }))}
+          />
         )}
 
-        {tab === 'analysis' && (
-          <div className="flex flex-col gap-6">
-            {!canAnalyse && (
-              <div className="text-sm text-slate-400">
-                Add at least one Pokémon to your team to enable analysis.
-              </div>
-            )}
-            {canAnalyse && data.typeChart && analysis && (
-              <>
-                <CoverageGrid chart={data.typeChart} members={members} />
-                <section>
-                  <h3 className="font-semibold mb-2">Uncovered Types</h3>
-                  {analysis.team.uncovered.length === 0 ? (
-                    <div className="text-sm text-emerald-300">
-                      Your team can hit every type super-effectively. 🎉
-                    </div>
-                  ) : (
-                    <div className="text-sm text-amber-200">
-                      Missing super-effective coverage on:{' '}
-                      <span className="font-semibold">{analysis.team.uncovered.join(', ')}</span>
-                    </div>
-                  )}
-                </section>
-                <section>
-                  <h3 className="font-semibold mb-2">Suggestions</h3>
-                  <SuggestionPanel
-                    suggestions={suggestions}
-                    mixedMovesNote={analysis.team.mixed}
-                    onApply={applySuggestion}
-                  />
-                </section>
-              </>
-            )}
-          </div>
-        )}
-
-        {tab === 'roster' && (
-          <CustomRoster
+        {view.page === 'team' && currentTeam && (
+          <TeamDetailPage
+            team={currentTeam}
+            tab={view.tab}
+            onTabChange={(tab) => setView({ page: 'team', teamId: view.teamId, tab })}
+            pokemon={data.pokemon}
+            moves={data.moves}
             customs={state.customPokemon}
+            typeChart={data.typeChart}
+            showMoves={showMoves}
+            onShowMovesChange={setShowMoves}
+            onUpdateMember={(idx, m) => updateMember(view.teamId, idx, m)}
+            onSaveCustom={saveCustom}
+            onRenameTeam={(name) => updateTeam(view.teamId, (t) => ({ ...t, name }))}
+            onDeleteTeam={() => deleteTeam(view.teamId)}
+            onApplySuggestion={(s) => applySuggestion(view.teamId, s)}
+            includeCustomsAnalysis={includeCustomsAnalysis}
+            onIncludeCustomsChange={setIncludeCustomsAnalysis}
+            includeMegaDynamax={settings.includeMegaDynamax}
+            excludeLegendaries={settings.excludeLegendaries}
+          />
+        )}
+
+        {view.page === 'custompkmn' && (
+          <CustomPkmnPage
+            customs={state.customPokemon}
+            onAdd={(m) => {
+              setState((s) => ({ ...s, customPokemon: [...s.customPokemon, m] }));
+              toast('Custom Pokémon saved');
+            }}
             onRename={(id, name) =>
               setState((s) => ({
                 ...s,
@@ -342,32 +385,10 @@ export default function App() {
           />
         )}
 
-        {tab === 'io' && (
-          <ImportExport
-            team={activeTeam}
-            pokemon={data.pokemon}
-            moves={data.moves}
-            onImport={(imported, unknown, skipped) => {
-              updateActiveTeam((t) => {
-                const members = [...t.members];
-                for (let i = 0; i < imported.length && i < 6; i++) members[i] = imported[i];
-                return { ...t, members };
-              });
-              for (const name of skipped) {
-                toast(`Could not import ${name}: Pokémon not found in database. Skipping.`);
-              }
-              if (unknown.length > 0) {
-                toast(`Imported team. ${unknown.length} move(s) need type/power: ${unknown.join(', ')}`);
-              } else if (skipped.length === 0) {
-                toast('Imported team');
-              }
-            }}
-            toast={toast}
-          />
-        )}
-
-        {tab === 'settings' && (
-          <Settings
+        {view.page === 'settings' && (
+          <SettingsPage
+            settings={settings}
+            onSettingsChange={updateSettings}
             installAvailable={!!installEvent}
             onInstall={async () => {
               if (!installEvent) return;
@@ -375,6 +396,8 @@ export default function App() {
               await installEvent.userChoice;
               setInstallEvent(null);
             }}
+            dataVersion={data.version}
+            dataGeneratedAt={data.generatedAt}
           />
         )}
       </main>
@@ -384,7 +407,6 @@ export default function App() {
           {toastMsg}
         </div>
       )}
-
     </div>
   );
 }

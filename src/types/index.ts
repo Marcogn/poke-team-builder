@@ -57,6 +57,7 @@ export interface AppState {
   teams: Team[];
   customPokemon: TeamMember[];
   activeTeamId: string;
+  settings?: AppSettings;
 }
 
 /** Catalogue entry for a Pokémon species/form pulled from PokéAPI. */
@@ -102,4 +103,18 @@ export interface PokemonDataFile {
   pokemon: PokemonEntry[];
   moves: MoveEntry[];
   typeChart: TypeChart;
+}
+
+/** Navigation state machine — no router library needed. */
+export type AppView =
+  | { page: 'teams' }
+  | { page: 'team'; teamId: string; tab: 'pokemon' | 'analysis' }
+  | { page: 'custompkmn' }
+  | { page: 'settings' };
+
+/** Persisted settings within teamdex_userdata. */
+export interface AppSettings {
+  theme: 'system' | 'light' | 'dark';
+  includeMegaDynamax: boolean;
+  excludeLegendaries: boolean;
 }

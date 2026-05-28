@@ -13,12 +13,13 @@ export function useSuggestions(
   members: TeamMember[],
   pool: PokemonEntry[],
   customs: TeamMember[],
-  options: { includeCustoms: boolean },
+  options: { includeCustoms: boolean; excludeLegendaries?: boolean },
 ) {
   return useMemo<Suggestion[]>(() => {
     if (!chart) return [];
     return computeSuggestions(chart, members, pool, customs, {
       includeCustoms: options.includeCustoms,
+      excludeLegendaries: options.excludeLegendaries,
     });
-  }, [chart, members, pool, customs, options.includeCustoms]);
+  }, [chart, members, pool, customs, options.includeCustoms, options.excludeLegendaries]);
 }
