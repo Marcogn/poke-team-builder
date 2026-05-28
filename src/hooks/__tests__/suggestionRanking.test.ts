@@ -65,7 +65,7 @@ describe('suggestionEngine — ranking by coverage gain', () => {
     }
   });
 
-  it('does not return results sorted by dex order (ID)', () => {
+  it('verifies primary sort is by gain, not dex order', () => {
     const team: TeamMember[] = [buildMember('Pikachu', ['electric', null])];
     const suggestions = computeSuggestions(mockTypeChart, team, mockPokemonList, [], {
       includeCustoms: false,

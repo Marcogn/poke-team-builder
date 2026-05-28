@@ -47,7 +47,6 @@ function pickRandom(pool: Suggestion[], count: number): Suggestion[] {
   const withGain = pool.filter((s) => s.gain > 0);
   const noGain = pool.filter((s) => s.gain <= 0);
   const picks: Suggestion[] = [];
-  const used = new Set<number>();
 
   // First pick from gain > 0
   const source1 = [...withGain];

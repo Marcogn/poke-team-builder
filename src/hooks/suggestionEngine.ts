@@ -111,7 +111,7 @@ export function computeSuggestions(
       })
       .sort((a, b) => {
         if (b.gain !== a.gain) return b.gain - a.gain;
-        if (a.isFinal !== b.isFinal) return a.isFinal ? 1 : -1; // isFinal desc: true first
+        if (a.isFinal !== b.isFinal) return b.isFinal ? 1 : -1; // isFinal desc: true first
         return a.entryId - b.entryId; // id asc
       });
 
@@ -169,7 +169,7 @@ export function computeSuggestions(
     })
     .sort((a, b) => {
       if (b.gain !== a.gain) return b.gain - a.gain;
-      if (a.isFinal !== b.isFinal) return a.isFinal ? 1 : -1;
+      if (a.isFinal !== b.isFinal) return b.isFinal ? 1 : -1;
       return a.entryId - b.entryId;
     });
 
