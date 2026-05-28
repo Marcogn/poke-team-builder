@@ -5,9 +5,9 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: '#1a1a2e',
-        panel: '#23233a',
-        panel2: '#2c2c46',
+        bg: 'rgb(var(--color-bg) / <alpha-value>)',
+        panel: 'rgb(var(--color-panel) / <alpha-value>)',
+        panel2: 'rgb(var(--color-panel2) / <alpha-value>)',
         accent: '#7c5cff',
         type: {
           normal: '#A8A77A',
