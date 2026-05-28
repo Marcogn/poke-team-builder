@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 import {
   MoveEntry,
@@ -18,8 +18,6 @@ interface Props {
   pokemon: PokemonEntry[];
   moves: MoveEntry[];
   customs: TeamMember[];
-  includeCustoms: boolean;
-  onToggleIncludeCustoms: (v: boolean) => void;
   onChange: (m: TeamMember | null) => void;
   onSaveCustom: (m: TeamMember) => void;
   onClear: () => void;
@@ -30,12 +28,14 @@ export function PokemonSlot({
   pokemon,
   moves,
   customs,
-  includeCustoms,
-  onToggleIncludeCustoms,
   onChange,
   onSaveCustom,
   onClear,
 }: Props) {
+  // Per-slot "include saved custom Pokémon" toggle. Owned locally so that
+  // toggling on one slot does *not* leak into the other five slots.
+  const [includeCustoms, setIncludeCustoms] = useState(false);
+
   const options = useMemo<DropdownOption<PokemonEntry | TeamMember>[]>(() => {
     const customOpts: DropdownOption<TeamMember>[] = includeCustoms
       ? customs.map((c) => ({
@@ -108,7 +108,7 @@ export function PokemonSlot({
         <input
           type="checkbox"
           checked={includeCustoms}
-          onChange={(e) => onToggleIncludeCustoms(e.target.checked)}
+          onChange={(e) => setIncludeCustoms(e.target.checked)}
         />
         Include saved custom Pokémon in search
       </label>

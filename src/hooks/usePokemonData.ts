@@ -90,6 +90,20 @@ async function fetchJsonWithRetry<T>(url: string): Promise<T> {
   }
 }
 
+/**
+ * Extract the trailing numeric id from a PokéAPI resource URL.
+ *
+ * The static api-data mirror indexes every resource by numeric id, *not* by
+ * name. URLs look like `https://pokeapi.co/api/v2/pokemon/26/` or
+ * `/api/v2/pokemon-species/26/`. Returns `null` if no numeric id segment can
+ * be found (e.g. an empty url, or a url that ends in a non-numeric slug).
+ */
+function extractIdFromUrl(url: string): string | null {
+  if (!url) return null;
+  const last = url.split('/').filter(Boolean).pop();
+  return last && /^\d+$/.test(last) ? last : null;
+}
+
 /** Run an async mapper over `items` with bounded concurrency and inter-batch delay. */
 async function processInBatches<T, R>(
   items: T[],
@@ -225,14 +239,31 @@ async function fetchAll(
   isCancelled: () => boolean,
 ): Promise<PokeApiCachePayload> {
   // --- Type chart ---
+  // The static mirror indexes types by numeric id. Fetch the index, build a
+  // name → id map, then fetch each of the 18 canonical types by id. Skip
+  // non-battle types like 'unknown' and 'shadow'.
   onProgress(0, 'types');
   const chart = buildEmptyChart();
+  const typeIndex = await fetchJsonWithRetry<{
+    results: { name: string; url: string }[];
+  }>(`${API_BASE}/type/index.json`);
+  const typeIdByName = new Map<string, string>();
+  for (const r of typeIndex.results) {
+    if (r.name === 'unknown' || r.name === 'shadow') continue;
+    const id = extractIdFromUrl(r.url);
+    if (id) typeIdByName.set(r.name, id);
+  }
   await processInBatches(
     POKEMON_TYPES.slice(),
     async (t) => {
+      const id = typeIdByName.get(t);
+      if (!id) {
+        console.warn(`PokéAPI: type "${t}" has no id in the index`);
+        return;
+      }
       try {
         const data = await fetchJsonWithRetry<PokeApiType>(
-          `${API_BASE}/type/${t}/index.json`,
+          `${API_BASE}/type/${id}/index.json`,
         );
         for (const x of data.damage_relations.double_damage_to) {
           chart[t][x.name as PokemonType] = 2;
@@ -252,26 +283,34 @@ async function fetchAll(
   if (isCancelled()) return emptyPayload();
 
   // --- Pokémon index ---
+  // Returns a paginated `{ results: [{ name, url }] }`. The numeric id is the
+  // trailing segment of each url. Entries with an unparseable url are skipped.
   onProgress(5, 'pokemon-list');
   const list = await fetchJsonWithRetry<{ results: { name: string; url: string }[] }>(
     `${API_BASE}/pokemon/index.json`,
   );
-  const total = list.results.length;
+  const pokemonRefs: { name: string; id: string }[] = [];
+  for (const r of list.results) {
+    const id = extractIdFromUrl(r.url);
+    if (id) pokemonRefs.push({ name: r.name, id });
+  }
+  const total = pokemonRefs.length;
   if (isCancelled()) return emptyPayload();
 
-  // --- Pokémon detail batches ---
-  const speciesUrlBySpeciesName = new Map<string, string>();
+  // --- Pokémon detail batches (fetched by id) ---
+  const speciesIdBySpeciesName = new Map<string, string>();
   const pokemonRaw: PokeApiPokemon[] = [];
   await processInBatches(
-    list.results,
+    pokemonRefs,
     async (entry) => {
       try {
         const p = await fetchJsonWithRetry<PokeApiPokemon>(
-          `${API_BASE}/pokemon/${entry.name}/index.json`,
+          `${API_BASE}/pokemon/${entry.id}/index.json`,
         );
         pokemonRaw.push(p);
-        if (!speciesUrlBySpeciesName.has(p.species.name)) {
-          speciesUrlBySpeciesName.set(p.species.name, p.species.url);
+        if (!speciesIdBySpeciesName.has(p.species.name)) {
+          const sid = extractIdFromUrl(p.species.url);
+          if (sid) speciesIdBySpeciesName.set(p.species.name, sid);
         }
       } catch (err) {
         console.warn(`PokéAPI: pokemon "${entry.name}" fetch failed`, err);
@@ -281,18 +320,18 @@ async function fetchAll(
   );
   if (isCancelled()) return emptyPayload();
 
-  // --- Species data (legendary/mythical + evolution chain url) ---
-  const speciesNames = Array.from(speciesUrlBySpeciesName.keys());
+  // --- Species data (legendary/mythical + evolution chain url), fetched by id ---
+  const speciesEntries = Array.from(speciesIdBySpeciesName.entries());
   const speciesFlags = new Map<
     string,
     { legendary: boolean; mythical: boolean; evoChainUrl: string }
   >();
   await processInBatches(
-    speciesNames,
-    async (name) => {
+    speciesEntries,
+    async ([name, id]) => {
       try {
         const sp = await fetchJsonWithRetry<PokeApiSpecies>(
-          `${API_BASE}/pokemon-species/${name}/index.json`,
+          `${API_BASE}/pokemon-species/${id}/index.json`,
         );
         speciesFlags.set(name, {
           legendary: sp.is_legendary,
@@ -307,7 +346,7 @@ async function fetchAll(
   );
   if (isCancelled()) return emptyPayload();
 
-  // --- Evolution chains ---
+  // --- Evolution chains (already id-based) ---
   const uniqueChainUrls = Array.from(
     new Set(Array.from(speciesFlags.values()).map((v) => v.evoChainUrl)),
   ).filter(Boolean);
@@ -316,10 +355,7 @@ async function fetchAll(
     uniqueChainUrls,
     async (url) => {
       try {
-        // The chain URL points at PokéAPI proper; rewrite to the static mirror.
-        // URLs look like .../api/v2/evolution-chain/{id}/
-        const m = url.match(/evolution-chain\/(\d+)/);
-        const id = m ? m[1] : null;
+        const id = extractIdFromUrl(url);
         if (!id) return;
         const data = await fetchJsonWithRetry<{ chain: EvoNode }>(
           `${API_BASE}/evolution-chain/${id}/index.json`,
@@ -333,18 +369,21 @@ async function fetchAll(
   );
   if (isCancelled()) return emptyPayload();
 
-  // --- Move index (details lazily fetched on demand) ---
+  // --- Move index (details fetched lazily by id on demand) ---
   onProgress(85, 'moves-list');
   let moveIndex: MoveIndexEntry[] = [];
   try {
     const mList = await fetchJsonWithRetry<{
       results: { name: string; url: string }[];
     }>(`${API_BASE}/move/index.json`);
-    moveIndex = mList.results.map((r) => ({
-      name: r.name,
-      displayName: prettify(r.name),
-      url: r.url,
-    }));
+    moveIndex = mList.results
+      .map((r) => ({
+        name: r.name,
+        displayName: prettify(r.name),
+        url: r.url,
+      }))
+      // Entries with no extractable id can never be loaded lazily; drop them.
+      .filter((r) => extractIdFromUrl(r.url) !== null);
   } catch (err) {
     console.warn('PokéAPI: move index fetch failed', err);
   }
@@ -402,9 +441,17 @@ export function usePokemonData() {
       if (!payload) return null;
       const cached = payload.moveDetails?.[name];
       if (cached) return cached;
+      // Resolve the numeric id from the move index — the static mirror is
+      // id-indexed and `/move/{name}/index.json` does not exist.
+      const indexEntry = payload.moveIndex.find((m) => m.name === name);
+      const id = indexEntry ? extractIdFromUrl(indexEntry.url) : null;
+      if (!id) {
+        console.warn(`PokéAPI: move "${name}" has no id in the move index`);
+        return null;
+      }
       try {
         const m = await fetchJsonWithRetry<PokeApiMoveDetail>(
-          `${API_BASE}/move/${name}/index.json`,
+          `${API_BASE}/move/${id}/index.json`,
         );
         const detail: MoveEntry = {
           id: m.id,
@@ -432,6 +479,9 @@ export function usePokemonData() {
     if (cached && cached.version === CACHE_VERSION) {
       payloadRef.current = cached.data;
       const moves = Object.values(cached.data.moveDetails ?? {});
+      if (import.meta.env?.DEV) {
+        console.log(`[usePokemonData] loaded ${cached.data.pokemon.length} Pokémon (from cache)`);
+      }
       setState({
         pokemon: cached.data.pokemon,
         moves,
@@ -460,6 +510,12 @@ export function usePokemonData() {
         if (cancelled) return;
         payloadRef.current = payload;
         saveCache({ version: CACHE_VERSION, data: payload });
+        // Development aid: surface the total entry count so a broken index
+        // fetch / id extraction is obvious (~1300+ expected including forms;
+        // anything under 100 means something upstream is wrong).
+        if (import.meta.env?.DEV) {
+          console.log(`[usePokemonData] loaded ${payload.pokemon.length} Pokémon`);
+        }
         setState({
           pokemon: payload.pokemon,
           moves: Object.values(payload.moveDetails ?? {}),

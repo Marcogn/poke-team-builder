@@ -41,7 +41,6 @@ interface BeforeInstallPromptEvent extends Event {
 export default function App() {
   const data = usePokemonData();
   const [state, setState] = useState<AppState>(loadAppState);
-  const [includeCustoms, setIncludeCustoms] = useState(false);
   const [includeCustomsAnalysis, setIncludeCustomsAnalysis] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
@@ -127,53 +126,71 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-bg text-slate-100">
-      <header className="border-b border-panel2 bg-panel/60 backdrop-blur sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-          <div className="flex items-center gap-2 font-bold text-lg">
-            <span className="bg-accent text-white px-2 py-0.5 rounded">TD</span>
-            <span>Pokémon Team Analyzer</span>
-          </div>
-          <nav className="ml-auto flex items-center gap-1 text-sm">
-            {(['team', 'analysis', 'roster', 'io', 'settings'] as const).map((t) => (
-              <button
-                key={t}
-                className={`px-3 py-1.5 rounded ${tab === t ? 'bg-accent' : 'hover:bg-panel2'}`}
-                onClick={() => setTab(t)}
-              >
-                {t === 'io' ? 'Import/Export' : t.charAt(0).toUpperCase() + t.slice(1)}
-              </button>
-            ))}
-          </nav>
-        </div>
-        {/* Team switcher */}
-        <div className="max-w-6xl mx-auto px-4 pb-2 flex items-center gap-2 flex-wrap">
-          {state.teams.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setState((s) => ({ ...s, activeTeamId: t.id }))}
-              className={`text-xs px-2 py-1 rounded border ${
-                t.id === state.activeTeamId ? 'bg-accent border-accent' : 'border-panel2 hover:bg-panel2'
-              }`}
-            >
-              {t.name}
-            </button>
-          ))}
+      {/* Compact, single-row header. */}
+      <header className="flex items-center gap-3 px-4 py-2 bg-[#1a1a2e] border-b border-white/10 sticky top-0 z-20">
+        <span className="bg-accent text-white px-2 py-0.5 rounded text-sm font-bold">
+          TD
+        </span>
+        <span className="text-base font-semibold whitespace-nowrap">
+          Pokémon Team Analyzer
+        </span>
+        {installEvent && (
           <button
-            onClick={newTeam}
-            className="text-xs px-2 py-1 rounded bg-panel2 hover:bg-panel"
+            onClick={async () => {
+              if (!installEvent) return;
+              await installEvent.prompt();
+              await installEvent.userChoice;
+              setInstallEvent(null);
+            }}
+            className="ml-auto text-xs px-2 py-1 rounded bg-accent hover:bg-violet-500"
           >
-            + New team
+            Install
           </button>
-          {state.teams.length > 1 && (
-            <button
-              onClick={() => deleteTeam(activeTeam.id)}
-              className="text-xs px-2 py-1 rounded text-red-300 hover:text-red-200"
-            >
-              Delete current
-            </button>
-          )}
-        </div>
+        )}
       </header>
+      {/* Nav bar — horizontally scrollable on narrow screens. */}
+      <nav className="flex gap-1 px-4 py-1 bg-[#1a1a2e] border-b border-white/10 overflow-x-auto sticky top-12 z-10">
+        {(['team', 'analysis', 'roster', 'io', 'settings'] as const).map((t) => (
+          <button
+            key={t}
+            className={`px-3 py-1.5 rounded text-sm whitespace-nowrap ${
+              tab === t ? 'bg-accent' : 'hover:bg-panel2'
+            }`}
+            onClick={() => setTab(t)}
+          >
+            {t === 'io' ? 'Import/Export' : t.charAt(0).toUpperCase() + t.slice(1)}
+          </button>
+        ))}
+      </nav>
+
+      {/* Team switcher — moved out of the header for the compact layout. */}
+      <div className="max-w-6xl mx-auto px-4 pt-3 flex items-center gap-2 flex-wrap">
+        {state.teams.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setState((s) => ({ ...s, activeTeamId: t.id }))}
+            className={`text-xs px-2 py-1 rounded border ${
+              t.id === state.activeTeamId ? 'bg-accent border-accent' : 'border-panel2 hover:bg-panel2'
+            }`}
+          >
+            {t.name}
+          </button>
+        ))}
+        <button
+          onClick={newTeam}
+          className="text-xs px-2 py-1 rounded bg-panel2 hover:bg-panel"
+        >
+          + New team
+        </button>
+        {state.teams.length > 1 && (
+          <button
+            onClick={() => deleteTeam(activeTeam.id)}
+            className="text-xs px-2 py-1 rounded text-red-300 hover:text-red-200"
+          >
+            Delete current
+          </button>
+        )}
+      </div>
 
       {data.loading && (
         <div className="max-w-6xl mx-auto px-4 mt-4">
@@ -185,6 +202,8 @@ export default function App() {
             <div className="h-2 bg-panel2 rounded">
               <div className="h-2 bg-accent rounded" style={{ width: `${progress}%` }} />
             </div>
+            {/* Skeleton placeholders are only rendered while loading; once
+                loading completes the real 6 team slots take over below. */}
             <div className="grid grid-cols-3 gap-2 mt-3">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="skeleton h-24" />
@@ -202,13 +221,14 @@ export default function App() {
       <main className="max-w-6xl mx-auto px-4 py-4 flex flex-col gap-6">
         {tab === 'team' && (
           <>
+            {/* The 6 team slots always render once loading is done, regardless
+                of whether any slot is filled. Skeleton cards above are scoped
+                to the loading block only. */}
             <TeamBuilder
               team={activeTeam}
               pokemon={data.pokemon}
               moves={data.moves}
               customs={state.customPokemon}
-              includeCustoms={includeCustoms}
-              onToggleIncludeCustoms={setIncludeCustoms}
               onUpdateMember={updateMember}
               onSaveCustom={saveCustom}
               onRenameTeam={(name) => updateActiveTeam((t) => ({ ...t, name }))}

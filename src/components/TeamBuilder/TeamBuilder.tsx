@@ -6,8 +6,6 @@ interface Props {
   pokemon: PokemonEntry[];
   moves: MoveEntry[];
   customs: TeamMember[];
-  includeCustoms: boolean;
-  onToggleIncludeCustoms: (v: boolean) => void;
   onUpdateMember: (idx: number, m: TeamMember | null) => void;
   onSaveCustom: (m: TeamMember) => void;
   onRenameTeam: (name: string) => void;
@@ -18,8 +16,6 @@ export function TeamBuilder({
   pokemon,
   moves,
   customs,
-  includeCustoms,
-  onToggleIncludeCustoms,
   onUpdateMember,
   onSaveCustom,
   onRenameTeam,
@@ -44,8 +40,6 @@ export function TeamBuilder({
             pokemon={pokemon}
             moves={moves}
             customs={customs}
-            includeCustoms={includeCustoms}
-            onToggleIncludeCustoms={onToggleIncludeCustoms}
             onChange={(next) => onUpdateMember(i, next)}
             onSaveCustom={onSaveCustom}
             onClear={() => onUpdateMember(i, null)}
