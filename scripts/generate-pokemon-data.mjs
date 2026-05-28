@@ -44,7 +44,7 @@ function prettify(name) {
   return name
     .split('-')
     .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
-    .join('-');
+    .join(' ');
 }
 
 function sleep(ms) {
@@ -203,6 +203,35 @@ async function generate() {
   }
   console.log('Type chart complete.\n');
 
+  // 6. Fetch move list
+  console.log('Fetching move list...');
+  const moveListData = await fetchJson(`${POKEAPI_BASE}/move?limit=10000&offset=0`);
+  const moveList = moveListData.results; // { name, url }[]
+  console.log(`Found ${moveList.length} moves.\n`);
+
+  // 7. Fetch move details
+  const movesRaw = [];
+  const moveResults = await processInBatches(moveList, async (entry) => {
+    const data = await fetchWithRetry(entry.url);
+    return data;
+  }, 'moves');
+
+  for (const m of moveResults) {
+    if (m) {
+      movesRaw.push({
+        id: m.id,
+        name: m.name,
+        displayName: prettify(m.name),
+        type: m.type.name,
+        power: m.power,
+        damageClass: m.damage_class.name,
+      });
+    }
+  }
+  console.log(`\nFetched ${movesRaw.length} move details.\n`);
+
+  const moves = movesRaw.sort((a, b) => a.id - b.id);
+
   // --- Assemble output ---
   const pokemon = pokemonRaw
     .map((p) => {
@@ -231,7 +260,9 @@ async function generate() {
 
   const output = {
     generatedAt: new Date().toISOString(),
+    version: 2,
     pokemon,
+    moves,
     typeChart,
   };
 
@@ -239,8 +270,8 @@ async function generate() {
   mkdirSync(dirname(OUTPUT_PATH), { recursive: true });
   writeFileSync(OUTPUT_PATH, JSON.stringify(output, null, 2), 'utf-8');
 
-  console.log(`\nDone! Written ${pokemon.length} Pokémon to ${OUTPUT_PATH}`);
-  console.log(`File size: ${(Buffer.byteLength(JSON.stringify(output)) / 1024 / 1024).toFixed(2)} MB`);
+  const fileSize = (Buffer.byteLength(JSON.stringify(output)) / 1024 / 1024).toFixed(2);
+  console.log(`\nDone. ${pokemon.length} pokemon, ${moves.length} moves written to ${OUTPUT_PATH} (${fileSize} MB)`);
 }
 
 generate().catch((err) => {

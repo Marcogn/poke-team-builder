@@ -17,14 +17,11 @@ vi.mock('../../hooks/usePokemonData', () => ({
   usePokemonData: () => ({
     pokemon: mockPokemonList,
     moves: mockMoveList,
-    moveIndex: [],
     typeChart: null,
     loading: false,
-    progress: 100,
-    stage: 'done',
     error: null,
-    resetCache: vi.fn(),
-    loadMoveDetails: vi.fn(),
+    version: 2,
+    generatedAt: '2026-01-01T00:00:00Z',
   }),
 }));
 
@@ -191,25 +188,14 @@ describe('TeamBuilder integration', () => {
   });
 });
 
-describe('Settings — localStorage key separation', () => {
-  it('Reset data cache clears only the PokéAPI cache key, never user data', async () => {
-    const user = userEvent.setup();
-    localStorage.setItem('teamdex_pokeapi_cache', JSON.stringify({ x: 1 }));
-    localStorage.setItem('teamdex_userdata', JSON.stringify({ y: 2 }));
-
+describe('Settings — install button', () => {
+  it('renders the install button when available', async () => {
     const { Settings } = await import('../Settings/Settings');
-    const onResetCache = vi.fn(() => {
-      // Replicate the production reset: only the cache key is removed.
-      localStorage.removeItem('teamdex_pokeapi_cache');
-    });
+    const onInstall = vi.fn();
     render(
-      <Settings onResetCache={onResetCache} installAvailable={false} onInstall={() => {}} />,
+      <Settings installAvailable={true} onInstall={onInstall} />,
     );
-    await user.click(screen.getByRole('button', { name: /reset data cache/i }));
-
-    expect(onResetCache).toHaveBeenCalled();
-    expect(localStorage.getItem('teamdex_pokeapi_cache')).toBeNull();
-    expect(localStorage.getItem('teamdex_userdata')).toBe(JSON.stringify({ y: 2 }));
+    expect(screen.getByRole('button', { name: /install app/i })).toBeInTheDocument();
   });
 });
 

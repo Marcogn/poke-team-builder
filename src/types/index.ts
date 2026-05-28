@@ -94,3 +94,12 @@ export interface MoveIndexEntry {
 }
 
 export type TypeChart = Record<PokemonType, Record<PokemonType, number>>;
+
+/** Shape of the pre-compiled pokemon-data.json file. */
+export interface PokemonDataFile {
+  generatedAt: string | null;
+  version: number;
+  pokemon: PokemonEntry[];
+  moves: MoveEntry[];
+  typeChart: TypeChart;
+}
