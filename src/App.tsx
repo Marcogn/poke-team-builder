@@ -122,8 +122,6 @@ export default function App() {
     });
   };
 
-  const progress = data.loading ? Math.round(data.progress) : 100;
-
   return (
     <div className="min-h-screen bg-bg text-slate-100">
       {/* Compact, single-row header. */}
@@ -133,6 +131,14 @@ export default function App() {
         </span>
         <span className="text-base font-semibold whitespace-nowrap">
           Pokémon Team Analyzer
+        </span>
+        <span
+          className={`text-[10px] px-1.5 py-0.5 rounded ${
+            data.version === 0 ? 'bg-red-700 text-red-100' : 'bg-panel2 text-slate-400'
+          }`}
+          title={data.generatedAt ? `Generated: ${new Date(data.generatedAt).toLocaleString()}` : undefined}
+        >
+          {data.version === 0 ? 'data: not generated' : `data v${data.version}`}
         </span>
         {installEvent && (
           <button
@@ -192,29 +198,9 @@ export default function App() {
         )}
       </div>
 
-      {data.loading && (
-        <div className="max-w-6xl mx-auto px-4 mt-4">
-          <div className="bg-panel rounded p-3 text-sm">
-            <div className="flex justify-between mb-1">
-              <span>Loading PokéAPI data — {data.stage}…</span>
-              <span>{progress}%</span>
-            </div>
-            <div className="h-2 bg-panel2 rounded">
-              <div className="h-2 bg-accent rounded" style={{ width: `${progress}%` }} />
-            </div>
-            {/* Skeleton placeholders are only rendered while loading; once
-                loading completes the real 6 team slots take over below. */}
-            <div className="grid grid-cols-3 gap-2 mt-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="skeleton h-24" />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
       {data.error && (
         <div className="max-w-6xl mx-auto px-4 mt-4 bg-red-900/40 text-red-200 p-3 rounded text-sm">
-          Failed to load PokéAPI data: {data.error}
+          {data.error}
         </div>
       )}
 
@@ -332,7 +318,6 @@ export default function App() {
 
         {tab === 'settings' && (
           <Settings
-            onResetCache={data.resetCache}
             installAvailable={!!installEvent}
             onInstall={async () => {
               if (!installEvent) return;

@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
+    "check-data": "node -e \"const d=require('./src/data/pokemon-data.json'); if(d.version<2) { console.error('pokemon-data.json is outdated or placeholder. Run: npm run generate-data'); process.exit(1); }\"",
     "generate-data": "node scripts/generate-pokemon-data.mjs"
   },
   "dependencies": {
