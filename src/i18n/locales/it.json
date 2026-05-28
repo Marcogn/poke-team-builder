@@ -1,0 +1,126 @@
+{
+  "nav": {
+    "teams": "Team",
+    "customPkmn": "Pokémon Custom",
+    "settings": "Impostazioni"
+  },
+  "teams": {
+    "title": "I tuoi Team",
+    "newTeam": "Nuovo team",
+    "createEmpty": "Crea team vuoto",
+    "importShowdown": "Importa da Showdown",
+    "deleteTeam": "Elimina team",
+    "confirmDelete": "Sei sicuro di voler eliminare \"{{name}}\"?",
+    "cancel": "Annulla",
+    "delete": "Elimina"
+  },
+  "teamDetail": {
+    "pokemonTab": "Pokémon",
+    "analysisTab": "Analisi",
+    "export": "Esporta",
+    "deleteTeam": "Elimina team",
+    "analyzeTeam": "Analizza team",
+    "includeCustom": "Includi Pokémon custom salvati",
+    "enableMoves": "Abilita slot mosse"
+  },
+  "analysis": {
+    "empty": "Aggiungi Pokémon nel tab Pokémon per analizzare il tuo team.",
+    "basisTypesOnly": "Analisi basata solo sui tipi dei Pokémon.",
+    "basisMovesOnly": "Analisi basata sulle mosse inserite.",
+    "basisMixed": "Mista: basata sulle mosse per {{moveNames}}, sui tipi per {{typeNames}}.",
+    "offensiveCoverage": "Copertura offensiva",
+    "defensiveCoverage": "Copertura difensiva",
+    "sharedWeaknesses": "Debolezze condivise",
+    "uncoveredTypes": "Tipi scoperti",
+    "suggestions": "Suggerimenti",
+    "noSharedWeaknesses": "Nessuna — il tuo team non ha debolezze sovrapposte.",
+    "fullCoverage": "Il tuo team può colpire ogni tipo in modo super-efficace. 🎉",
+    "missingCoverage": "Copertura super-efficace mancante su:",
+    "perPokemon": "Dettaglio per Pokémon",
+    "mostVulnerable": "Più vulnerabile",
+    "teamBest": "Miglior team"
+  },
+  "suggestions": {
+    "noSuggestions": "Nessun suggerimento disponibile.",
+    "noMatch": "Nessun suggerimento corrisponde ai filtri attuali.",
+    "solidCoverage": "La copertura del tuo team è solida. Mostrando alternative:",
+    "addToTeam": "Aggiungi al team",
+    "replaces": "Sostituisci: {{name}}",
+    "bestCoverage": "Copertura ottimale",
+    "random": "Casuale",
+    "randomizeAgain": "🔀 Ricasualizza",
+    "allGenerations": "Tutte le generazioni",
+    "covers": "Copre:",
+    "newWeaknesses": "Nuove debolezze:",
+    "aggravates": "Aggrava:",
+    "alreadyWeak": "Già debole: {{names}}",
+    "noNewWeaknesses": "Nessuna nuova debolezza condivisa introdotta",
+    "newTypesCovered": "Nuovi tipi coperti:"
+  },
+  "settings": {
+    "title": "Impostazioni",
+    "teamSuggestions": "Suggerimenti Team",
+    "includeMega": "Includi forme Mega/Dynamax/Gigantamax",
+    "includeLegendary": "Includi Leggendari e Mitici",
+    "appearance": "Aspetto",
+    "theme": "Tema",
+    "systemDefault": "Predefinito sistema",
+    "light": "Chiaro",
+    "dark": "Scuro",
+    "language": "Lingua",
+    "data": "Dati",
+    "currentData": "Dati attuali: v{{version}}",
+    "generated": "Generato il: {{date}}",
+    "regenerateHint": "Per rigenerare i dati Pokémon, esegui:",
+    "installApp": "Installa App",
+    "app": "App"
+  },
+  "customPkmn": {
+    "title": "Pokémon Custom",
+    "noCustom": "Nessun Pokémon custom salvato.",
+    "addCustom": "Aggiungi Pokémon custom"
+  },
+  "export": {
+    "title": "Esporta",
+    "copyClipboard": "Copia negli appunti",
+    "downloadTxt": "Scarica .txt"
+  },
+  "types": {
+    "normal": "NOR",
+    "fire": "FUO",
+    "water": "ACQ",
+    "electric": "ELE",
+    "grass": "ERB",
+    "ice": "GHI",
+    "fighting": "LOT",
+    "poison": "VEL",
+    "ground": "TER",
+    "flying": "VOL",
+    "psychic": "PSI",
+    "bug": "INS",
+    "rock": "ROC",
+    "ghost": "FAN",
+    "dragon": "DRA",
+    "dark": "BUI",
+    "steel": "ACC",
+    "fairy": "FAT"
+  },
+  "toast": {
+    "copied": "Copiato negli appunti",
+    "imported": "Team importato",
+    "importFailed": "Impossibile importare {{name}}: Pokémon non trovato nel database. Saltato.",
+    "unknownMoves": "Team importato. {{count}} mossa/e necessitano tipo/potenza: {{names}}",
+    "customSaved": "Pokémon custom salvato",
+    "customDeleted": "Pokémon custom eliminato",
+    "added": "{{name}} aggiunto allo slot {{slot}}",
+    "replaced": "{{name}} ha sostituito {{old}} nello slot {{slot}}"
+  },
+  "defensive": {
+    "weaknesses4x": "Debolezze (4×)",
+    "weaknesses2x": "Debolezze (2×)",
+    "resistances05x": "Resistenze (½×)",
+    "resistances025x": "Resistenze (¼×)",
+    "immune0x": "Immune (0×)",
+    "moveCoverage": "Copertura mosse:"
+  }
+}

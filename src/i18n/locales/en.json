@@ -1,0 +1,126 @@
+{
+  "nav": {
+    "teams": "Teams",
+    "customPkmn": "CustomPKMN",
+    "settings": "Settings"
+  },
+  "teams": {
+    "title": "Your Teams",
+    "newTeam": "New team",
+    "createEmpty": "Create empty team",
+    "importShowdown": "Import from Showdown",
+    "deleteTeam": "Delete team",
+    "confirmDelete": "Are you sure you want to delete \"{{name}}\"?",
+    "cancel": "Cancel",
+    "delete": "Delete"
+  },
+  "teamDetail": {
+    "pokemonTab": "Pokémon",
+    "analysisTab": "Analysis",
+    "export": "Export",
+    "deleteTeam": "Delete team",
+    "analyzeTeam": "Analyze team",
+    "includeCustom": "Include custom Pokémon in suggestions",
+    "enableMoves": "Enable move slots"
+  },
+  "analysis": {
+    "empty": "Add Pokémon in the Pokémon tab to analyze your team.",
+    "basisTypesOnly": "Analysis based on Pokémon types only.",
+    "basisMovesOnly": "Analysis based on entered moves.",
+    "basisMixed": "Mixed: move-based for {{moveNames}}, type-based for {{typeNames}}.",
+    "offensiveCoverage": "Offensive Coverage",
+    "defensiveCoverage": "Defensive Coverage",
+    "sharedWeaknesses": "Shared Weaknesses",
+    "uncoveredTypes": "Uncovered Types",
+    "suggestions": "Suggestions",
+    "noSharedWeaknesses": "None — your team has no overlapping weaknesses.",
+    "fullCoverage": "Your team can hit every type super-effectively. 🎉",
+    "missingCoverage": "Missing super-effective coverage on:",
+    "perPokemon": "Per-Pokémon Breakdown",
+    "mostVulnerable": "Most vulnerable",
+    "teamBest": "Team best"
+  },
+  "suggestions": {
+    "noSuggestions": "No suggestions available.",
+    "noMatch": "No suggestions match current filters.",
+    "solidCoverage": "Your team coverage is solid. Showing alternatives:",
+    "addToTeam": "Add to team",
+    "replaces": "Replaces: {{name}}",
+    "bestCoverage": "Best coverage",
+    "random": "Random",
+    "randomizeAgain": "🔀 Randomize again",
+    "allGenerations": "All generations",
+    "covers": "Covers:",
+    "newWeaknesses": "New weaknesses:",
+    "aggravates": "Aggravates:",
+    "alreadyWeak": "already weak: {{names}}",
+    "noNewWeaknesses": "No new shared weaknesses introduced",
+    "newTypesCovered": "New types covered:"
+  },
+  "settings": {
+    "title": "Settings",
+    "teamSuggestions": "Team Suggestions",
+    "includeMega": "Include Mega/Dynamax/Gigantamax forms in suggestions",
+    "includeLegendary": "Include Legendary & Mythical Pokémon in suggestions",
+    "appearance": "Appearance",
+    "theme": "Theme",
+    "systemDefault": "System default",
+    "light": "Light",
+    "dark": "Dark",
+    "language": "Language",
+    "data": "Data",
+    "currentData": "Current data: v{{version}}",
+    "generated": "Generated: {{date}}",
+    "regenerateHint": "To regenerate Pokémon data, run:",
+    "installApp": "Install App",
+    "app": "App"
+  },
+  "customPkmn": {
+    "title": "Custom Pokémon",
+    "noCustom": "No custom Pokémon saved yet.",
+    "addCustom": "Add custom Pokémon"
+  },
+  "export": {
+    "title": "Export",
+    "copyClipboard": "Copy to clipboard",
+    "downloadTxt": "Download .txt"
+  },
+  "types": {
+    "normal": "NOR",
+    "fire": "FIR",
+    "water": "WAT",
+    "electric": "ELE",
+    "grass": "GRA",
+    "ice": "ICE",
+    "fighting": "FIG",
+    "poison": "POI",
+    "ground": "GRO",
+    "flying": "FLY",
+    "psychic": "PSY",
+    "bug": "BUG",
+    "rock": "ROC",
+    "ghost": "GHO",
+    "dragon": "DRA",
+    "dark": "DAR",
+    "steel": "STE",
+    "fairy": "FAI"
+  },
+  "toast": {
+    "copied": "Copied to clipboard",
+    "imported": "Imported team",
+    "importFailed": "Could not import {{name}}: Pokémon not found in database. Skipping.",
+    "unknownMoves": "Imported team. {{count}} move(s) need type/power: {{names}}",
+    "customSaved": "Custom Pokémon saved",
+    "customDeleted": "Custom Pokémon deleted",
+    "added": "{{name}} added to slot {{slot}}",
+    "replaced": "{{name}} replaced {{old}} in slot {{slot}}"
+  },
+  "defensive": {
+    "weaknesses4x": "Weaknesses (4×)",
+    "weaknesses2x": "Weaknesses (2×)",
+    "resistances05x": "Resistances (½×)",
+    "resistances025x": "Resistances (¼×)",
+    "immune0x": "Immune (0×)",
+    "moveCoverage": "Move coverage:"
+  }
+}

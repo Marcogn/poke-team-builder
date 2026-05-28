@@ -267,13 +267,13 @@ describe('Type override → analysis', () => {
 
     const row = screen
       .getAllByText('AquaBird')
-      .find((el) => el.tagName === 'TD')!
+      .find((el) => el.closest('td'))!
       .closest('tr')!;
     const cells = row.querySelectorAll('td');
     const { POKEMON_TYPES } = await import('../../types');
     const cellFor = (t: string) => cells[POKEMON_TYPES.indexOf(t as never) + 1];
-    expect(cellFor('electric').textContent).toBe('2x');
-    expect(cellFor('grass').textContent).toBe('2x');
-    expect(cellFor('water').textContent).not.toBe('2x');
+    expect(cellFor('electric').textContent).toBe('2×');
+    expect(cellFor('grass').textContent).toBe('2×');
+    expect(cellFor('water').textContent).not.toBe('2×');
   });
 });

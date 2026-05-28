@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { v4 as uuid } from 'uuid';
 import { AppSettings, AppState, AppView, PokemonEntry, Team, TeamMember } from './types';
 import { usePokemonData } from './hooks/usePokemonData';
@@ -9,6 +10,7 @@ import { CustomPkmnPage } from './components/CustomRoster/CustomPkmnPage';
 import { SettingsPage } from './components/Settings/SettingsPage';
 import { parseShowdownTeam } from './utils/showdownParser';
 import { resolveSpriteUrl } from './utils/spriteUtils';
+import './i18n';
 
 const STATE_KEY = 'teamdex_userdata';
 
@@ -69,6 +71,8 @@ export default function App() {
   const [showMoves, setShowMoves] = useState(false);
 
   const settings: AppSettings = state.settings ?? DEFAULT_SETTINGS;
+
+  const { t } = useTranslation();
 
   // Apply theme on boot and when settings change
   useEffect(() => {
@@ -258,11 +262,11 @@ export default function App() {
   const currentTeam = view.page === 'team' ? getTeam(view.teamId) : undefined;
 
   return (
-    <div className="min-h-screen bg-bg text-slate-100">
+    <div className="min-h-screen bg-white dark:bg-bg text-gray-900 dark:text-slate-100">
       {/* Header */}
-      <header className="flex items-center gap-3 px-4 py-2 bg-[#1a1a2e] border-b border-white/10 sticky top-0 z-50">
+      <header className="flex items-center gap-3 px-4 py-2 bg-white dark:bg-[#1a1a2e] border-b border-gray-200 dark:border-white/10 sticky top-0 z-50">
         <span className="bg-accent text-white px-2 py-0.5 rounded text-sm font-bold">TD</span>
-        <span className="text-base font-semibold whitespace-nowrap">Pokémon Team Analyzer</span>
+        <span className="text-base font-semibold whitespace-nowrap text-gray-900 dark:text-white">Pokémon Team Analyzer</span>
         <span
           className={`text-[10px] px-1.5 py-0.5 rounded ${
             data.version === 0 ? 'bg-red-700 text-red-100' : 'bg-panel2 text-slate-400'
@@ -287,30 +291,30 @@ export default function App() {
       </header>
 
       {/* Nav */}
-      <nav className="flex gap-1 px-4 py-1 bg-[#1a1a2e] border-b border-white/10 sticky top-[40px] z-50">
+      <nav className="flex gap-1 px-4 py-1 bg-white dark:bg-[#1a1a2e] border-b border-gray-200 dark:border-white/10 sticky top-[40px] z-50">
         <button
           className={`px-3 py-1.5 rounded text-sm whitespace-nowrap ${
-            view.page === 'teams' || view.page === 'team' ? 'bg-accent' : 'hover:bg-panel2'
+            view.page === 'teams' || view.page === 'team' ? 'bg-accent text-white' : 'hover:bg-gray-100 dark:hover:bg-panel2 text-gray-700 dark:text-slate-100'
           }`}
           onClick={() => setView({ page: 'teams' })}
         >
-          Teams
+          {t('nav.teams')}
         </button>
         <button
           className={`px-3 py-1.5 rounded text-sm whitespace-nowrap ${
-            view.page === 'custompkmn' ? 'bg-accent' : 'hover:bg-panel2'
+            view.page === 'custompkmn' ? 'bg-accent text-white' : 'hover:bg-gray-100 dark:hover:bg-panel2 text-gray-700 dark:text-slate-100'
           }`}
           onClick={() => setView({ page: 'custompkmn' })}
         >
-          CustomPKMN
+          {t('nav.customPkmn')}
         </button>
         <button
           className={`px-3 py-1.5 rounded text-sm whitespace-nowrap ${
-            view.page === 'settings' ? 'bg-accent' : 'hover:bg-panel2'
+            view.page === 'settings' ? 'bg-accent text-white' : 'hover:bg-gray-100 dark:hover:bg-panel2 text-gray-700 dark:text-slate-100'
           }`}
           onClick={() => setView({ page: 'settings' })}
         >
-          Settings
+          {t('nav.settings')}
         </button>
       </nav>
 
@@ -403,7 +407,7 @@ export default function App() {
       </main>
 
       {toastMsg && (
-        <div className="fixed bottom-4 right-4 bg-panel border border-panel2 px-3 py-2 rounded shadow-xl text-sm">
+        <div className="fixed bottom-4 right-4 bg-white dark:bg-panel border border-gray-200 dark:border-panel2 px-3 py-2 rounded shadow-xl text-sm text-gray-900 dark:text-slate-100">
           {toastMsg}
         </div>
       )}

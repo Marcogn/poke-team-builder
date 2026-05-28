@@ -242,4 +242,34 @@ npm run build          # type-check then production build
 npm run preview        # preview the production build locally
 npm run test           # run the Vitest suite once
 npm run test:coverage  # run the Vitest suite with coverage
+npm run generate-icons # generate PWA icons locally
 ```
+
+### i18n
+
+Uses i18next + react-i18next.
+Translation files: src/i18n/locales/en.json and it.json.
+All user-visible strings must use the useTranslation hook.
+Pokémon names and move names are NOT translated.
+Language persisted in localStorage key 'teamdex_lang'.
+
+### PWA Icons
+
+Icons are generated at build time by scripts/generate-icons.mjs
+using the sharp package. They are gitignored and regenerated
+on every deploy. Do not commit icon PNG files.
+To regenerate locally: npm run generate-icons
+
+### Analysis page structure
+
+Seven sections in order: Coverage basis notice, Per-Pokémon
+breakdown, Offensive grid, Defensive grid, Shared weaknesses,
+Uncovered types, Suggestions.
+
+### Suggestion scoring
+
+Composite score = offensive_gain - 0.5×new_weaknesses
+                  - 1.0×aggravated_shared_weaknesses
+See suggestionEngine.ts for full implementation.
+Do not change weights without updating this documentation
+and the tests.

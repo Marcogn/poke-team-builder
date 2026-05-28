@@ -13,11 +13,14 @@
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
     "check-data": "node -e \"const d=require('./src/data/pokemon-data.json'); if(d.version<2) { console.error('pokemon-data.json is outdated or placeholder. Run: npm run generate-data'); process.exit(1); }\"",
-    "generate-data": "node scripts/generate-pokemon-data.mjs"
+    "generate-data": "node scripts/generate-pokemon-data.mjs",
+    "generate-icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
+    "i18next": "^26.3.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-i18next": "^17.0.8",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
@@ -33,6 +36,7 @@
     "autoprefixer": "^10.4.19",
     "jsdom": "^24.1.0",
     "postcss": "^8.4.39",
+    "sharp": "^0.34.5",
     "tailwindcss": "^3.4.6",
     "typescript": "^5.5.3",
     "vite": "^5.3.4",

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { POKEMON_TYPES, PokemonType } from '../../types';
 
 const TYPE_CLASS: Record<PokemonType, string> = {
@@ -36,7 +37,7 @@ interface Props {
   onRandomize: () => void;
 }
 
-const GEN_RANGES: Record<GenerationFilter, [number, number]> = {
+export const GEN_RANGES: Record<GenerationFilter, [number, number]> = {
   all: [0, Infinity],
   '1': [1, 151],
   '2': [152, 251],
@@ -67,64 +68,67 @@ const GEN_LABELS: Record<GenerationFilter, string> = {
 };
 
 export function SuggestionFilters({ filters, onChange, onRandomize }: Props) {
-  const toggleType = (t: PokemonType) => {
-    const next = filters.types.includes(t)
-      ? filters.types.filter((x) => x !== t)
-      : [...filters.types, t];
+  const { t } = useTranslation();
+  const toggleType = (tp: PokemonType) => {
+    const next = filters.types.includes(tp)
+      ? filters.types.filter((x) => x !== tp)
+      : [...filters.types, tp];
     onChange({ ...filters, types: next });
   };
 
   return (
-    <div className="flex flex-col gap-3 bg-panel rounded p-3 border border-panel2">
+    <div className="flex flex-col gap-3 bg-panel dark:bg-panel rounded p-3 border border-panel2 dark:border-panel2 bg-white dark:bg-panel">
       <div className="flex flex-wrap items-center gap-3">
         <select
           value={filters.generation}
           onChange={(e) => onChange({ ...filters, generation: e.target.value as GenerationFilter })}
-          className="bg-panel2 rounded px-2 py-1 text-xs"
+          className="bg-panel2 dark:bg-panel2 rounded px-2 py-1 text-xs text-gray-900 dark:text-slate-100"
         >
           {(Object.keys(GEN_LABELS) as GenerationFilter[]).map((g) => (
-            <option key={g} value={g}>{GEN_LABELS[g]}</option>
+            <option key={g} value={g}>{g === 'all' ? t('suggestions.allGenerations') : GEN_LABELS[g]}</option>
           ))}
         </select>
 
         <div className="flex items-center gap-1">
           <button
-            className={`text-xs px-2 py-1 rounded ${filters.mode === 'best' ? 'bg-accent' : 'bg-panel2 hover:bg-panel'}`}
+            className={`text-xs px-2 py-1 rounded ${filters.mode === 'best' ? 'bg-accent text-white' : 'bg-panel2 hover:bg-panel text-gray-900 dark:text-slate-100'}`}
             onClick={() => onChange({ ...filters, mode: 'best' })}
           >
-            Best coverage
+            {t('suggestions.bestCoverage')}
           </button>
           <button
-            className={`text-xs px-2 py-1 rounded ${filters.mode === 'random' ? 'bg-accent' : 'bg-panel2 hover:bg-panel'}`}
-            onClick={() => onChange({ ...filters, mode: 'random' })}
+            className={`text-xs px-2 py-1 rounded ${filters.mode === 'random' ? 'bg-accent text-white' : 'bg-panel2 hover:bg-panel text-gray-900 dark:text-slate-100'}`}
+            onClick={() => {
+              onChange({ ...filters, mode: 'random' });
+            }}
           >
-            Random
+            {t('suggestions.random')}
           </button>
         </div>
 
         {filters.mode === 'random' && (
           <button
-            className="text-xs px-2 py-1 rounded bg-panel2 hover:bg-panel"
+            className="text-xs px-2 py-1 rounded bg-panel2 hover:bg-panel text-gray-900 dark:text-slate-100"
             onClick={onRandomize}
           >
-            🔀 Randomize again
+            {t('suggestions.randomizeAgain')}
           </button>
         )}
       </div>
 
       <div className="flex flex-wrap gap-1">
-        {POKEMON_TYPES.map((t) => {
-          const selected = filters.types.includes(t);
-          const cls = TYPE_CLASS[t] ?? 'bg-slate-600';
+        {POKEMON_TYPES.map((tp) => {
+          const selected = filters.types.includes(tp);
+          const cls = TYPE_CLASS[tp] ?? 'bg-slate-600';
           return (
             <button
-              key={t}
-              onClick={() => toggleType(t)}
+              key={tp}
+              onClick={() => toggleType(tp)}
               className={`px-2 py-0.5 text-xs rounded-full font-semibold uppercase tracking-wide transition-opacity ${
                 selected ? `${cls} text-white opacity-100` : `${cls} text-white opacity-30 hover:opacity-60`
               }`}
             >
-              {t}
+              {tp}
             </button>
           );
         })}

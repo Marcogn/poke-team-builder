@@ -8,3 +8,6 @@ coverage
 .env
 .env.*
 !.env.example
+public/icons/icon-192x192.png
+public/icons/icon-512x512.png
+public/icons/apple-touch-icon.png

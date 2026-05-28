@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { PokemonType } from '../../types';
 
 const TYPE_CLASS: Record<PokemonType, string> = {
@@ -21,12 +22,14 @@ const TYPE_CLASS: Record<PokemonType, string> = {
   fairy: 'bg-type-fairy',
 };
 
-export function TypeBadge({ type, size = 'sm' }: { type: PokemonType; size?: 'sm' | 'md' }) {
+export function TypeBadge({ type, size = 'sm', abbreviated = false }: { type: PokemonType; size?: 'sm' | 'md'; abbreviated?: boolean }) {
+  const { t } = useTranslation();
   const cls = TYPE_CLASS[type] ?? 'bg-slate-600';
   const pad = size === 'md' ? 'px-3 py-1 text-sm' : 'px-2 py-0.5 text-xs';
+  const label = abbreviated ? t(`types.${type}`) : type;
   return (
     <span className={`${cls} ${pad} rounded-full font-semibold uppercase tracking-wide text-white inline-block`}>
-      {type}
+      {label}
     </span>
   );
 }

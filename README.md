@@ -26,6 +26,7 @@ in this section._
 - Smart suggestions: additions when the team has fewer than six members,
   weakest-link replacements when the team is full, optional inclusion of the
   custom roster, final-evolution preference, legendary handling.
+- Language switcher (English / Italian) with full i18n support.
 - Showdown-format import and export through clipboard or `.txt` file.
 - PWA install support: works offline once the PokéAPI cache is built.
 - Settings panel to reset the PokéAPI data cache.
@@ -49,6 +50,7 @@ in this section._
 
 ```bash
 npm install
+npm run generate-icons  # generate PWA icons
 npm run dev
 ```
 
@@ -94,6 +96,7 @@ cache** to force a re-download (for example after a PokéAPI update).
 
 1. Open the site in Safari.
 2. Tap the share icon, then *Add to Home Screen*.
+3. The apple-touch-icon provides the home screen icon.
 
 ### Android (Chrome)
 

@@ -37,6 +37,8 @@ jobs:
           cache: npm
       - uses: actions/configure-pages@v4
       - run: npm ci
+      - name: Generate PWA icons
+        run: node scripts/generate-icons.mjs
       - run: npm run build
         env:
           VITE_BASE_URL: /poke-team-builder/
