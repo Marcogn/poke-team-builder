@@ -104,10 +104,16 @@ export function computeSuggestions(
         cov.forEach((t) => {
           if (!teamAnalysis.unionCovered.has(t)) newly.push(t);
         });
-        return { cand, newly, gain: newly.length };
+        const entry = pool.find(
+          (p) => p.displayName === cand.speciesName || p.name === cand.speciesName.toLowerCase(),
+        );
+        return { cand, newly, gain: newly.length, isFinal: entry?.isFinalEvolution ?? false, entryId: entry?.id ?? Infinity };
       })
-      .sort((a, b) => b.gain - a.gain)
-      .slice(0, 5);
+      .sort((a, b) => {
+        if (b.gain !== a.gain) return b.gain - a.gain;
+        if (a.isFinal !== b.isFinal) return a.isFinal ? 1 : -1; // isFinal desc: true first
+        return a.entryId - b.entryId; // id asc
+      });
 
     return ranked.map(({ cand, newly, gain }) => ({
       kind: 'add' as const,
@@ -156,10 +162,16 @@ export function computeSuggestions(
       newUnion.forEach((t) => {
         if (!teamAnalysis.unionCovered.has(t)) newly.push(t);
       });
-      return { cand, gain, newly };
+      const entry = pool.find(
+        (p) => p.displayName === cand.speciesName || p.name === cand.speciesName.toLowerCase(),
+      );
+      return { cand, gain, newly, isFinal: entry?.isFinalEvolution ?? false, entryId: entry?.id ?? Infinity };
     })
-    .sort((a, b) => b.gain - a.gain)
-    .slice(0, 5);
+    .sort((a, b) => {
+      if (b.gain !== a.gain) return b.gain - a.gain;
+      if (a.isFinal !== b.isFinal) return a.isFinal ? 1 : -1;
+      return a.entryId - b.entryId;
+    });
 
   return ranked.map(({ cand, gain, newly }) => ({
     kind: 'replace' as const,

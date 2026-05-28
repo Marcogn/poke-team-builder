@@ -29,19 +29,22 @@ function renderBuilder(team: Team, overrides: Partial<ComponentProps<typeof Team
   const onUpdateMember = vi.fn();
   const onSaveCustom = vi.fn();
   const onRenameTeam = vi.fn();
+  const onShowMovesChange = vi.fn();
   const utils = render(
     <TeamBuilder
       team={team}
       pokemon={mockPokemonList}
       moves={mockMoveList}
       customs={[]}
+      showMoves={true}
+      onShowMovesChange={onShowMovesChange}
       onUpdateMember={onUpdateMember}
       onSaveCustom={onSaveCustom}
       onRenameTeam={onRenameTeam}
       {...overrides}
     />,
   );
-  return { ...utils, onUpdateMember, onSaveCustom, onRenameTeam };
+  return { ...utils, onUpdateMember, onSaveCustom, onRenameTeam, onShowMovesChange };
 }
 
 describe('TeamBuilder integration', () => {
@@ -149,6 +152,8 @@ describe('TeamBuilder integration', () => {
         pokemon={mockPokemonList}
         moves={mockMoveList}
         customs={[]}
+        showMoves={true}
+        onShowMovesChange={vi.fn()}
         onUpdateMember={(_idx, next) => {
           captured.value = next;
         }}
@@ -222,6 +227,8 @@ describe('Type override → analysis', () => {
           pokemon={mockPokemonList}
           moves={mockMoveList}
           customs={[]}
+          showMoves={true}
+          onShowMovesChange={() => {}}
           onUpdateMember={(idx, next) => {
             setTeam((t) => {
               const members = [...t.members];

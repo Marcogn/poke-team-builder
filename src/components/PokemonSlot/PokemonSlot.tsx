@@ -18,6 +18,7 @@ interface Props {
   pokemon: PokemonEntry[];
   moves: MoveEntry[];
   customs: TeamMember[];
+  showMoves: boolean;
   onChange: (m: TeamMember | null) => void;
   onSaveCustom: (m: TeamMember) => void;
   onClear: () => void;
@@ -28,6 +29,7 @@ export function PokemonSlot({
   pokemon,
   moves,
   customs,
+  showMoves,
   onChange,
   onSaveCustom,
   onClear,
@@ -156,16 +158,18 @@ export function PokemonSlot({
             </label>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {[0, 1, 2, 3].map((i) => (
-              <MoveSlot
-                key={i}
-                move={member.moves[i]}
-                moves={moves}
-                onChange={(mv) => setMove(i, mv)}
-              />
-            ))}
-          </div>
+          {showMoves && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {[0, 1, 2, 3].map((i) => (
+                <MoveSlot
+                  key={i}
+                  move={member.moves[i]}
+                  moves={moves}
+                  onChange={(mv) => setMove(i, mv)}
+                />
+              ))}
+            </div>
+          )}
 
           <div className="flex items-center gap-2 justify-end">
             <button
