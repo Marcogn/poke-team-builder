@@ -228,7 +228,7 @@ export function computeSuggestions(
         return a.entryId - b.entryId;
       });
 
-    return ranked.slice(0, ranked.length).map(({ cand, newlyCovered, gain, compositeScore, newWeaknesses, aggravatedWeaknesses, aggravatedMembers: aggMembers }) => ({
+    return ranked.map(({ cand, newlyCovered, gain, compositeScore, newWeaknesses, aggravatedWeaknesses, aggravatedMembers: aggMembers }) => ({
       kind: 'add' as const,
       candidate: cand,
       candidateLabel: cand.speciesName,
@@ -290,7 +290,7 @@ export function computeSuggestions(
       return a.entryId - b.entryId;
     });
 
-  return ranked.slice(0, ranked.length).map(({ cand, gain, compositeScore, newlyCovered, newWeaknesses, aggravatedWeaknesses, aggravatedMembers: aggMembers, replaceMember }) => ({
+  return ranked.map(({ cand, gain, compositeScore, newlyCovered, newWeaknesses, aggravatedWeaknesses, aggravatedMembers: aggMembers, replaceMember }) => ({
     kind: 'replace' as const,
     candidate: cand,
     candidateLabel: cand.speciesName,

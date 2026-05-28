@@ -4,12 +4,13 @@ import en from './locales/en.json';
 import it from './locales/it.json';
 
 const LANG_KEY = 'teamdex_lang';
+const SUPPORTED_LANGUAGES = ['en', 'it'];
 
 function detectLanguage(): string {
   const stored = localStorage.getItem(LANG_KEY);
-  if (stored && ['en', 'it'].includes(stored)) return stored;
+  if (stored && SUPPORTED_LANGUAGES.includes(stored)) return stored;
   const browserLang = navigator.language.split('-')[0];
-  if (['en', 'it'].includes(browserLang)) return browserLang;
+  if (SUPPORTED_LANGUAGES.includes(browserLang)) return browserLang;
   return 'en';
 }
 
@@ -20,7 +21,7 @@ i18n.use(initReactI18next).init({
   },
   lng: detectLanguage(),
   fallbackLng: 'en',
-  supportedLngs: ['en', 'it'],
+  supportedLngs: SUPPORTED_LANGUAGES,
   interpolation: {
     escapeValue: false,
   },
