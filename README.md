@@ -157,6 +157,25 @@ A Pokémon does not need to exist in PokéAPI to be used in a team.
 
 ## GitHub Pages deployment
 
+### GitHub Pages Setup (one-time)
+
+1. Go to repo Settings → Pages → Source: Deploy from branch → `gh-pages`.
+2. Go to repo Settings → Variables → Actions → New repository variable:
+   Name: `REPO_NAME`, Value: your-repo-name (without slashes).
+3. Push to `main` — the Actions workflow handles the rest.
+
+### First Deploy Expected Behavior
+
+- Actions runs: `test` → `build` → `deploy`.
+- GitHub Pages may take 1-2 minutes to become live after the first deploy.
+- PWA cache will populate on first browser visit (PokéAPI data fetch).
+
+### Local Preview of Production Build
+
+```bash
+npm run build && npm run preview
+```
+
 ### Manual deployment
 
 ```bash
@@ -166,13 +185,6 @@ VITE_BASE_URL=/<repo-name>/ npm run build
 
 The `public/.nojekyll` file is bundled so subdirectory assets are served
 correctly.
-
-### GitHub Actions
-
-The included workflow at `.github/workflows/deploy.yml` builds with the
-repository name as `VITE_BASE_URL` and publishes `dist/` via GitHub Pages
-on every push to `main`. Enable GitHub Pages for the repository with the
-*GitHub Actions* source.
 
 ## Known limitations
 

@@ -219,7 +219,6 @@ export default function App() {
               <button
                 disabled={!canAnalyse}
                 onClick={() => {
-                  setShowAnalysis(true);
                   setTab('analysis');
                 }}
                 className="px-4 py-2 rounded bg-accent disabled:bg-panel2 disabled:text-slate-500 hover:bg-violet-500 font-semibold"
@@ -333,8 +332,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Use showAnalysis to silence unused warning */}
-      <span className="hidden">{showAnalysis ? '' : ''}</span>
     </div>
   );
 }
