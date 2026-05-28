@@ -178,8 +178,8 @@ for manual completion. The block is still imported.
   by both the analysis hook and the suggestion engine and by tests.
 - The Showdown format contract above (`exportMemberToShowdown`,
   `parseShowdownBlock`). External users may rely on round-tripping.
-- The PWA manifest icon paths (`public/icon-192.png`,
-  `public/icon-512.png`, `public/favicon.svg`) — they are referenced by
+- The PWA manifest icon paths (`public/icons/icon-192x192.png`,
+  `public/icons/icon-512x512.png`, `public/favicon.ico`, `public/favicon.svg`) — they are referenced by
   the `vite-plugin-pwa` config in `vite.config.ts`.
 
 ## Common Pitfalls
