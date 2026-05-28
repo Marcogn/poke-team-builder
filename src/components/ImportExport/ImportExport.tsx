@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { MoveEntry, PokemonEntry, Team, TeamMember } from '../../types';
 import { exportTeamToShowdown, parseShowdownTeam } from '../../utils/showdownParser';
+import { resolveSpriteUrl } from '../../utils/spriteUtils';
 
 interface Props {
   team: Team;
@@ -46,7 +47,7 @@ export function ImportExport({ team, pokemon, moves, onImport, toast }: Props) {
     });
     const members = accepted.map((p) => {
       const found = pokemon.find((pp) => pp.displayName.toLowerCase() === p.member.speciesName.toLowerCase());
-      return { ...p.member, spriteUrl: found?.spriteUrl ?? null };
+      return { ...p.member, spriteUrl: resolveSpriteUrl(found, 'card') };
     });
     const unknown = Array.from(new Set(accepted.flatMap((p) => p.unknownMoveNames)));
     onImport(members, unknown, skipped);

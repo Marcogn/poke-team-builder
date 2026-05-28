@@ -5,6 +5,7 @@ import {
   TypeChart,
 } from '../types';
 import { analyseTeam, offensiveCoverageForMember } from '../utils/coverageEngine';
+import { resolveSpriteUrl } from '../utils/spriteUtils';
 
 export interface Suggestion {
   kind: 'add' | 'replace';
@@ -33,7 +34,7 @@ export function memberFromEntry(e: PokemonEntry): TeamMember {
   return {
     id: 'cand-' + e.id,
     speciesName: e.displayName,
-    spriteUrl: e.spriteUrl,
+    spriteUrl: resolveSpriteUrl(e, 'card'),
     types: e.types,
     moves: [null, null, null, null],
     isCustomSaved: false,

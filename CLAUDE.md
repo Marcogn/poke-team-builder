@@ -28,10 +28,14 @@ a damage calculator.
 
 ## Key Data Flows
 
-1. **App boot.** `usePokemonData` checks `localStorage` for the cache.
-   If absent, it fetches the Pokémon list, the type chart, the move
-   list, and evolution chains from PokéAPI, writes them to
-   `localStorage`, then resolves. UI renders only after the cache is
+1. **App boot.** `usePokemonData` checks `localStorage` for the cache
+   under `teamdex_pokeapi_cache`. If missing or its `version` does not
+   match `CACHE_VERSION`, the hook fetches Pokémon, species, evolution
+   chains, types, and the move index from the static
+   `raw.githubusercontent.com/PokeAPI/api-data` mirror (batched 50 at
+   a time, 50 ms between batches, one retry per resource). On completion
+   it writes the cache with `version: 2`. `teamdex_userdata` is never
+   touched during this process. UI renders only after the cache is
    complete.
 2. **Pokémon selection.** When the user picks a species in a slot, the
    slot reads the form's types from the cache. The user can override
@@ -53,12 +57,34 @@ a damage calculator.
 
 ### `src/hooks/usePokemonData.ts`
 
-Owns all PokéAPI fetching and `localStorage` caching for species,
-forms, moves, types, and evolution chains. Must **not** contain
-coverage logic, suggestion logic, or UI-only state. Invariant: the
-cache is either complete (all four datasets present and consistent)
-or fully absent — never partial. The reset path clears the cache
-atomically and triggers a fresh fetch.
+Owns all static data fetching from the PokeAPI/api-data mirror on
+GitHub (`raw.githubusercontent.com/PokeAPI/api-data`) and
+`localStorage` caching for species, forms, the move index, types, and
+evolution chains under `teamdex_pokeapi_cache`. Must **never** touch
+`teamdex_userdata`. Must **not** contain coverage logic, suggestion
+logic, or UI-only state. Invariants: the cache is either complete and
+versioned (`{ version: CACHE_VERSION, data: { … } }`) or fully absent —
+never partial. Move details are loaded lazily via `loadMoveDetails` and
+written back into the same cache entry.
+
+### `src/utils/spriteUtils.ts`
+
+Owns all sprite URL resolution logic via `resolveSpriteUrl(pokemon,
+context)`. Must **never** fetch images — only selects among the URL
+strings stored on a `PokemonEntry`. Invariant: always returns `null`
+rather than throwing when sprite data is missing or malformed.
+
+### Sprite Resolution
+
+- Sprites are never stored as binary data, only as URL strings on the
+  `PokemonEntry` (`spriteHome`, `spriteArtwork`, `spriteDefault`).
+- Card/slot context priority: HOME → official artwork → pixel sprite
+  → `null` (caller renders the placeholder).
+- Dropdown thumbnails always use the pixel sprite — HOME renders are
+  too heavy for list items.
+- Custom Pokémon saved to the roster never carry sprite URLs.
+- Resolution is centralised in `src/utils/spriteUtils.ts`. Do **not**
+  inline fallback logic in components.
 
 ### `src/hooks/useTypeChart.ts`
 
@@ -184,6 +210,16 @@ for manual completion. The block is still imported.
 
 ## Common Pitfalls
 
+- **Sprite URLs.** Always use `resolveSpriteUrl()` from
+  `src/utils/spriteUtils.ts`; never access `spriteHome`,
+  `spriteArtwork`, or `spriteDefault` directly from components.
+- **Cache version.** If you add new fields to the cached payload
+  structure, increment `CACHE_VERSION` in `usePokemonData.ts` —
+  otherwise users with old caches will get runtime errors on missing
+  fields.
+- **Batch fetching.** Do not increase the batch size above 50 without
+  testing. GitHub's CDN rate limits are undocumented and can cause
+  silent failures at higher concurrency.
 - **Alternate forms.** Some Pokémon share a species but have different
   type arrays per form (Rotom, Deoxys, Wormadam, …). Always use the
   PokéAPI **form** endpoint, not the species endpoint, to read types.

@@ -17,10 +17,14 @@ vi.mock('../../hooks/usePokemonData', () => ({
   usePokemonData: () => ({
     pokemon: mockPokemonList,
     moves: mockMoveList,
+    moveIndex: [],
     typeChart: null,
     loading: false,
-    progress: 1,
-    reset: vi.fn(),
+    progress: 100,
+    stage: 'done',
+    error: null,
+    resetCache: vi.fn(),
+    loadMoveDetails: vi.fn(),
   }),
 }));
 
@@ -135,6 +139,38 @@ describe('TeamBuilder integration', () => {
     const { onSaveCustom } = renderBuilder(team);
     await user.click(screen.getByRole('button', { name: /save as custom/i }));
     expect(onSaveCustom).toHaveBeenCalledWith(member);
+  });
+
+  it('sprite fallback in card context: artwork is used when HOME is null', async () => {
+    const user = userEvent.setup();
+    // Gastly's fixture has spriteHome: null and spriteArtwork set.
+    const gastly = mockPokemonList.find((p) => p.name === 'gastly')!;
+    expect(gastly.spriteHome).toBeNull();
+    expect(gastly.spriteArtwork).not.toBeNull();
+    const team: Team = { ...emptyTeam };
+    const captured: { value: TeamMember | null } = { value: null };
+    render(
+      <TeamBuilder
+        team={team}
+        pokemon={mockPokemonList}
+        moves={mockMoveList}
+        customs={[]}
+        includeCustoms={false}
+        onToggleIncludeCustoms={vi.fn()}
+        onUpdateMember={(_idx, next) => {
+          captured.value = next;
+        }}
+        onSaveCustom={vi.fn()}
+        onRenameTeam={vi.fn()}
+      />,
+    );
+    // Open the first slot's dropdown and pick Gastly.
+    const openers = screen.getAllByRole('button', { name: /choose pokémon/i });
+    await user.click(openers[0]);
+    const option = await screen.findByText('Gastly');
+    await user.click(option);
+    expect(captured.value).not.toBeNull();
+    expect(captured.value!.spriteUrl).toBe(gastly.spriteArtwork);
   });
 
   it('all 18 types are available in the type-1 selector', () => {

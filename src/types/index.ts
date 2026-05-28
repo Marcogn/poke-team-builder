@@ -66,7 +66,12 @@ export interface PokemonEntry {
   displayName: string;     // pretty display name
   speciesName: string;     // species name (e.g. "rotom")
   types: [PokemonType, PokemonType | null];
-  spriteUrl: string | null;
+  /** Pokémon HOME render URL — preferred for card/slot display. */
+  spriteHome: string | null;
+  /** Official artwork URL — used when HOME render is missing. */
+  spriteArtwork: string | null;
+  /** Classic pixel sprite URL — used in dropdown thumbnails and as last resort. */
+  spriteDefault: string | null;
   isLegendary: boolean;
   isMythical: boolean;
   isFinalEvolution: boolean;
@@ -79,6 +84,13 @@ export interface MoveEntry {
   type: PokemonType;
   power: number | null;
   damageClass: DamageClass;
+}
+
+/** Lightweight move-index entry persisted in the cache. */
+export interface MoveIndexEntry {
+  name: string;
+  displayName: string;
+  url: string;
 }
 
 export type TypeChart = Record<PokemonType, Record<PokemonType, number>>;

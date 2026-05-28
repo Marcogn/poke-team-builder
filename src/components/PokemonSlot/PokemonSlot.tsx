@@ -11,6 +11,7 @@ import {
 import { SearchableDropdown, DropdownOption } from '../SearchableDropdown/SearchableDropdown';
 import { TypeBadge } from '../TypeBadge/TypeBadge';
 import { MoveSlot } from '../MoveSlot/MoveSlot';
+import { resolveSpriteUrl } from '../../utils/spriteUtils';
 
 interface Props {
   member: TeamMember | null;
@@ -41,7 +42,8 @@ export function PokemonSlot({
           key: 'c-' + c.id,
           label: c.speciesName,
           value: c,
-          spriteUrl: c.spriteUrl,
+          // Custom Pokémon never carry a sprite — always placeholder.
+          spriteUrl: null,
           group: 'CUSTOM',
         }))
       : [];
@@ -49,7 +51,7 @@ export function PokemonSlot({
       key: 'p-' + p.id + '-' + p.name,
       label: p.displayName,
       value: p,
-      spriteUrl: p.spriteUrl,
+      spriteUrl: resolveSpriteUrl(p, 'dropdown'),
     }));
     return [...customOpts, ...apiOpts] as DropdownOption<PokemonEntry | TeamMember>[];
   }, [pokemon, customs, includeCustoms]);
@@ -69,7 +71,7 @@ export function PokemonSlot({
       onChange({
         id: uuid(),
         speciesName: p.displayName,
-        spriteUrl: p.spriteUrl,
+        spriteUrl: resolveSpriteUrl(p, 'card'),
         types: p.types,
         moves: [null, null, null, null],
         isCustomSaved: false,

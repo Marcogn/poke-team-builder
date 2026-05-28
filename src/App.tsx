@@ -123,7 +123,7 @@ export default function App() {
     });
   };
 
-  const progress = data.loading ? Math.round(((data.progress.current || 0) / (data.progress.total || 1)) * 100) : 100;
+  const progress = data.loading ? Math.round(data.progress) : 100;
 
   return (
     <div className="min-h-screen bg-bg text-slate-100">
@@ -179,10 +179,8 @@ export default function App() {
         <div className="max-w-6xl mx-auto px-4 mt-4">
           <div className="bg-panel rounded p-3 text-sm">
             <div className="flex justify-between mb-1">
-              <span>Loading PokéAPI data — {data.progress.stage}…</span>
-              <span>
-                {data.progress.current}/{data.progress.total}
-              </span>
+              <span>Loading PokéAPI data — {data.stage}…</span>
+              <span>{progress}%</span>
             </div>
             <div className="h-2 bg-panel2 rounded">
               <div className="h-2 bg-accent rounded" style={{ width: `${progress}%` }} />

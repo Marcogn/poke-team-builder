@@ -69,13 +69,14 @@ VITE_BASE_URL=/poke-team-builder/ npm run build
 
 ## First run behavior
 
-On first launch the app has no PokéAPI data in `localStorage`. It will:
-
-1. Fetch the full Pokémon list (species + forms), the type chart, and
-   evolution chain summaries from PokéAPI.
-2. Display a progress indicator while the cache is being built.
-3. Persist the result in `localStorage` so that subsequent loads are
-   instantaneous and work offline.
+On first load, the app fetches all Pokémon data from the official
+PokeAPI/api-data static repository on GitHub (no API key required).
+This takes approximately 30–90 seconds depending on connection speed.
+A progress bar shows the loading status. All data is cached in
+`localStorage` after the first load — subsequent loads are instant
+and work fully offline. Your teams and custom Pokémon are stored
+separately under `teamdex_userdata` and are never affected by cache
+resets.
 
 The cache is never refreshed automatically. Use **Settings → Reset PokéAPI
 cache** to force a re-download (for example after a PokéAPI update).
