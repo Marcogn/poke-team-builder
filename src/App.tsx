@@ -215,6 +215,31 @@ export default function App() {
     setView({ page: 'teams' });
   }, []);
 
+  const duplicateTeam = useCallback((id: string) => {
+    setState((s) => {
+      const source = s.teams.find((t) => t.id === id);
+      if (!source) return s;
+      const copy: Team = {
+        id: uuid(),
+        name: `${source.name} (copy)`,
+        createdAt: Date.now(),
+        members: source.members.map((m) =>
+          m === null
+            ? null
+            : {
+                ...m,
+                id: uuid(),
+                moves: m.moves.map((mv) =>
+                  mv === null ? null : { ...mv, id: uuid() },
+                ) as typeof m.moves,
+              },
+        ),
+      };
+      return { ...s, teams: [...s.teams, copy], activeTeamId: copy.id };
+    });
+    toast('Team duplicated');
+  }, [toast]);
+
   const applySuggestion = useCallback(
     (teamId: string, s: Suggestion) => {
       const entry = 'id' in s.candidate && typeof (s.candidate as PokemonEntry).name === 'string'
@@ -343,6 +368,7 @@ export default function App() {
             onCreateEmpty={createEmptyTeam}
             onImport={handleImportTeam}
             onRenameTeam={(id, name) => updateTeam(id, (t) => ({ ...t, name }))}
+            onDuplicateTeam={duplicateTeam}
           />
         )}
 

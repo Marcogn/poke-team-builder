@@ -8,9 +8,10 @@ interface Props {
   onCreateEmpty: () => void;
   onImport: (text: string) => void;
   onRenameTeam: (id: string, name: string) => void;
+  onDuplicateTeam: (id: string) => void;
 }
 
-export function TeamsPage({ teams, onSelectTeam, onCreateEmpty, onImport, onRenameTeam }: Props) {
+export function TeamsPage({ teams, onSelectTeam, onCreateEmpty, onImport, onRenameTeam, onDuplicateTeam }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -61,18 +62,34 @@ export function TeamsPage({ teams, onSelectTeam, onCreateEmpty, onImport, onRena
                 {t.name}
               </span>
             )}
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-gray-500 dark:text-slate-400">
               {t.members.filter(Boolean).length}/6
             </span>
-            <div className="flex flex-wrap gap-0.5">
-              {Array.from({ length: 6 }).map((_, i) => {
-                const m = t.members[i];
-                return m?.spriteUrl ? (
-                  <img key={i} src={m.spriteUrl} alt="" className="w-7 h-7 object-contain" />
-                ) : (
-                  <div key={i} className="w-7 h-7 rounded-full bg-panel2" />
-                );
-              })}
+            {/* Preview: only filled members, max 3 per row, centered (1, 2, 3, 3+1, 3+2, 3+3). */}
+            <div className="flex flex-wrap justify-center gap-1 mx-auto max-w-[7.5rem]">
+              {t.members
+                .filter((m): m is NonNullable<typeof m> => m !== null)
+                .map((m, i) =>
+                  m.spriteUrl ? (
+                    <img key={m.id ?? i} src={m.spriteUrl} alt="" className="w-9 h-9 object-contain" />
+                  ) : (
+                    <div
+                      key={m.id ?? i}
+                      className="w-9 h-9 rounded-full bg-gray-200 dark:bg-panel2"
+                    />
+                  ),
+                )}
+            </div>
+            <div className="flex gap-1 justify-end mt-1" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                className="text-[11px] px-2 py-0.5 rounded bg-gray-100 dark:bg-panel2 hover:bg-gray-200 dark:hover:bg-panel text-gray-700 dark:text-slate-100"
+                onClick={() => onDuplicateTeam(t.id)}
+                title="Duplicate team"
+                aria-label={`Duplicate ${t.name}`}
+              >
+                Duplicate
+              </button>
             </div>
           </div>
         ))}

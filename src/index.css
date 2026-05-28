@@ -3,7 +3,20 @@
 @tailwind utilities;
 
 :root {
+  color-scheme: light;
+  /* Light theme tokens (used by Tailwind colors `bg`, `panel`, `panel2`) */
+  --color-bg: 255 255 255;        /* white */
+  --color-panel: 248 250 252;     /* slate-50 */
+  --color-panel2: 226 232 240;    /* slate-200 */
+  --scrollbar-thumb: #cbd5e1;     /* slate-300 */
+}
+
+html.dark {
   color-scheme: dark;
+  --color-bg: 26 26 46;
+  --color-panel: 35 35 58;
+  --color-panel2: 44 44 70;
+  --scrollbar-thumb: #3a3a55;
 }
 
 html,
@@ -27,6 +40,23 @@ body {
   height: 8px;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: #3a3a55;
+  background: var(--scrollbar-thumb);
   border-radius: 4px;
+}
+
+/*
+ * Light-mode fallbacks for legacy `text-slate-*` and `text-white` usages that
+ * predate the theme refactor. In dark mode the original Tailwind colors apply;
+ * in light mode these elements would otherwise be near-invisible on white
+ * backgrounds, so we remap them to readable dark grays.
+ */
+html:not(.dark) .text-slate-100 { color: #0f172a; }   /* slate-900 */
+html:not(.dark) .text-slate-200 { color: #1e293b; }   /* slate-800 */
+html:not(.dark) .text-slate-300 { color: #334155; }   /* slate-700 */
+html:not(.dark) .text-slate-400 { color: #64748b; }   /* slate-500 */
+html:not(.dark) .text-slate-500 { color: #64748b; }   /* slate-500 */
+/* Only remap bare text-white (not when combined with explicit bg utilities such
+   as `bg-accent text-white`, which already provide their own dark surface). */
+html:not(.dark) .text-white:not([class*="bg-accent"]):not([class*="bg-red"]):not([class*="bg-violet"]):not([class*="bg-emerald"]):not([class*="bg-green"]):not([class*="bg-blue"]):not([class*="bg-amber"]) {
+  color: #0f172a;
 }
