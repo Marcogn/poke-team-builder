@@ -64,7 +64,6 @@ export function SearchableDropdown<T>({
       left: rect.left,
       width: rect.width,
       zIndex: 9999,
-      minHeight: '240px',
       maxHeight: '40vh',
       overflowY: 'auto',
     });

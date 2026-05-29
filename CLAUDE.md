@@ -254,6 +254,12 @@ back to the member's own types. Candidates in the suggestion engine
 are always evaluated by types only — we never invent a movepool for
 them.
 
+The team-detail page additionally gates this behavior on the
+"Enable move slots" checkbox: when the toggle is off, members are
+passed to the coverage / suggestion engines with `moves` cleared, so
+analysis is type-only regardless of any moves that may still be
+stored on the team data.
+
 ## Showdown Format Contract
 
 ### Read on import
