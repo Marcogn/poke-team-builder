@@ -164,6 +164,8 @@ describe('TeamBuilder integration', () => {
     // Open the first slot's dropdown and pick Gastly.
     const openers = screen.getAllByRole('button', { name: /choose pokémon/i });
     await user.click(openers[0]);
+    const searchInput = screen.getByPlaceholderText('Start typing to search...');
+    await user.type(searchInput, 'Gastly');
     const option = await screen.findByText('Gastly');
     await user.click(option);
     expect(captured.value).not.toBeNull();

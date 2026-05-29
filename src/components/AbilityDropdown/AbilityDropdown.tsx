@@ -33,7 +33,7 @@ export function AbilityDropdown({ value, onChange, placeholder }: Props) {
 
   const filtered = useMemo(() => {
     const q = (query || value).trim().toLowerCase();
-    if (!q) return KNOWN_ABILITIES_WITH_EFFECTS;
+    if (!q) return [];
     return KNOWN_ABILITIES_WITH_EFFECTS.filter((a) => a.includes(q));
   }, [query, value]);
 
@@ -104,7 +104,7 @@ export function AbilityDropdown({ value, onChange, placeholder }: Props) {
         onChange={(e) => handleInputChange(e.target.value)}
         onFocus={() => setOpen(true)}
         onKeyDown={handleKeyDown}
-        placeholder={placeholder ?? t('slot.abilityPlaceholder')}
+        placeholder={placeholder ?? t('common.searchPlaceholder')}
         className="w-full bg-panel2 rounded px-2 py-1 text-xs"
         autoComplete="off"
       />

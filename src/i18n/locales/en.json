@@ -152,5 +152,8 @@
     "back": "Back",
     "remainingSlots": "Remaining slots: {{count}}",
     "legendariesMythicals": "Legendaries / Mythicals"
+  },
+  "common": {
+    "searchPlaceholder": "Start typing to search..."
   }
 }

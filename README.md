@@ -16,6 +16,8 @@ in this section._
 
 - Multiple saved teams with six slots each, persisted in `localStorage`.
 - Searchable picker covering every PokéAPI species and alternate form.
+  Results appear only after typing at least 1 character — no initial list
+  shown on focus. All matching results are displayed (no pagination cap).
 - Per-slot type overrides for ROM hack typings; overrides never mutate the
   cached species data.
 - **Ability field** per slot: filterable dropdown showing known abilities
@@ -29,6 +31,8 @@ in this section._
 - Coverage analysis: per-member offensive grid, defensive profile
   (weak/resist/immune), shared team weaknesses, uncovered types.
   Ability-modified multipliers are shown in the defensive grid.
+  Type columns use official PokeAPI type sprites (Scarlet/Violet style).
+  Pokémon name columns are truncated with ellipsis on mobile.
 - Smart suggestions: additions when the team has fewer than six members,
   weakest-link replacements when the team is full, optional inclusion of the
   custom roster, final-evolution preference, legendary handling.

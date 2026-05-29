@@ -185,7 +185,7 @@ export function CoverageGrid({ chart, members }: Props) {
                 <th className="px-2 py-1 text-left sticky left-0 bg-white dark:bg-bg z-10 text-gray-900 dark:text-white">Pokémon</th>
                 {POKEMON_TYPES.map((tp) => (
                   <th key={tp} className="px-1 py-1 text-center">
-                    <TypeBadge type={tp} abbreviated />
+                    <TypeBadge type={tp} />
                   </th>
                 ))}
               </tr>
@@ -195,10 +195,10 @@ export function CoverageGrid({ chart, members }: Props) {
                 const attackingTypes = collectAttackingTypes(m);
                 return (
                   <tr key={m.id}>
-                    <td className="px-2 py-1 sticky left-0 bg-white dark:bg-bg z-10 whitespace-nowrap text-gray-900 dark:text-white">
+                    <td className="px-2 py-1 sticky left-0 bg-white dark:bg-bg z-10 text-gray-900 dark:text-white max-w-[96px]">
                       <div className="flex items-center gap-1">
-                        {m.spriteUrl && <img src={m.spriteUrl} alt="" className="w-5 h-5 object-contain" />}
-                        <span>{m.speciesName}</span>
+                        {m.spriteUrl && <img src={m.spriteUrl} alt="" className="w-5 h-5 object-contain shrink-0" />}
+                        <span className="overflow-hidden text-ellipsis whitespace-nowrap" title={m.speciesName}>{m.speciesName}</span>
                       </div>
                     </td>
                     {POKEMON_TYPES.map((def) => {
@@ -217,7 +217,7 @@ export function CoverageGrid({ chart, members }: Props) {
                 );
               })}
               <tr className="font-semibold">
-                <td className="px-2 py-1 sticky left-0 bg-white dark:bg-bg z-10 text-gray-900 dark:text-white">{t('analysis.teamBest')}</td>
+                <td className="px-2 py-1 sticky left-0 bg-white dark:bg-bg z-10 text-gray-900 dark:text-white max-w-[96px] overflow-hidden text-ellipsis whitespace-nowrap" title={t('analysis.teamBest')}>{t('analysis.teamBest')}</td>
                 {POKEMON_TYPES.map((def) => {
                   let best = 0;
                   for (const m of members) {
@@ -248,7 +248,7 @@ export function CoverageGrid({ chart, members }: Props) {
                 <th className="px-2 py-1 text-left sticky left-0 bg-white dark:bg-bg z-10 text-gray-900 dark:text-white">Pokémon</th>
                 {POKEMON_TYPES.map((tp) => (
                   <th key={tp} className="px-1 py-1 text-center">
-                    <TypeBadge type={tp} abbreviated />
+                    <TypeBadge type={tp} />
                   </th>
                 ))}
               </tr>
@@ -256,10 +256,10 @@ export function CoverageGrid({ chart, members }: Props) {
             <tbody>
               {members.map((m) => (
                 <tr key={m.id}>
-                  <td className="px-2 py-1 sticky left-0 bg-white dark:bg-bg z-10 whitespace-nowrap text-gray-900 dark:text-white">
+                  <td className="px-2 py-1 sticky left-0 bg-white dark:bg-bg z-10 text-gray-900 dark:text-white max-w-[96px]">
                     <div className="flex items-center gap-1">
-                      {m.spriteUrl && <img src={m.spriteUrl} alt="" className="w-5 h-5 object-contain" />}
-                      <span>{m.speciesName}</span>
+                      {m.spriteUrl && <img src={m.spriteUrl} alt="" className="w-5 h-5 object-contain shrink-0" />}
+                      <span className="overflow-hidden text-ellipsis whitespace-nowrap" title={m.speciesName}>{m.speciesName}</span>
                     </div>
                   </td>
                   {POKEMON_TYPES.map((atk) => {
@@ -273,7 +273,7 @@ export function CoverageGrid({ chart, members }: Props) {
                 </tr>
               ))}
               <tr className="font-semibold">
-                <td className="px-2 py-1 sticky left-0 bg-white dark:bg-bg z-10 text-gray-900 dark:text-white">{t('analysis.mostVulnerable')}</td>
+                <td className="px-2 py-1 sticky left-0 bg-white dark:bg-bg z-10 text-gray-900 dark:text-white max-w-[96px] overflow-hidden text-ellipsis whitespace-nowrap" title={t('analysis.mostVulnerable')}>{t('analysis.mostVulnerable')}</td>
                 {POKEMON_TYPES.map((atk) => {
                   let worst = 0;
                   for (const m of members) {

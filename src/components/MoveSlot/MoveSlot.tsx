@@ -38,7 +38,6 @@ export function MoveSlot({ move, moves, onChange }: Props) {
         value={null}
         placeholder={move ? move.name : 'Pick or type a move'}
         onChange={selectMove}
-        maxVisible={options.length}
       />
       <div className="flex items-center gap-2">
         <input
