@@ -242,6 +242,13 @@ async function generate() {
 
       const flags = speciesFlags.get(p.species.name);
 
+      // Extract default ability (first non-hidden ability)
+      const defaultAbility = p.abilities
+        ?.slice()
+        .sort((a, b) => a.slot - b.slot)
+        .find((a) => !a.is_hidden)
+        ?.ability?.name ?? null;
+
       return {
         id: p.id,
         name: p.name,
@@ -254,13 +261,14 @@ async function generate() {
         isLegendary: flags?.legendary ?? false,
         isMythical: flags?.mythical ?? false,
         isFinalEvolution: finalEvolutions.has(p.species.name),
+        defaultAbility,
       };
     })
     .sort((a, b) => a.id - b.id);
 
   const output = {
     generatedAt: new Date().toISOString(),
-    version: 2,
+    version: 3,
     pokemon,
     moves,
     typeChart,

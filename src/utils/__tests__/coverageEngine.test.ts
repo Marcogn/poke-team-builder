@@ -239,3 +239,86 @@ describe('coverageEngine — custom Pokémon type-only evaluation', () => {
     expect(cov.has('dark')).toBe(true);
   });
 });
+
+describe('coverageEngine — ability effects', () => {
+  it('volt-absorb zeroes out Electric multiplier', () => {
+    // Water/Flying is normally 4x weak to Electric (2*2)
+    expect(defensiveMultiplier(mockTypeChart, 'electric', ['water', 'flying'])).toBe(4);
+    expect(defensiveMultiplier(mockTypeChart, 'electric', ['water', 'flying'], 'volt-absorb')).toBe(0);
+  });
+
+  it('lightning-rod zeroes out Electric multiplier', () => {
+    expect(defensiveMultiplier(mockTypeChart, 'electric', ['water', null], 'lightning-rod')).toBe(0);
+  });
+
+  it('water-absorb zeroes out Water multiplier', () => {
+    expect(defensiveMultiplier(mockTypeChart, 'water', ['fire', null], 'water-absorb')).toBe(0);
+  });
+
+  it('flash-fire zeroes out Fire multiplier', () => {
+    expect(defensiveMultiplier(mockTypeChart, 'fire', ['grass', null], 'flash-fire')).toBe(0);
+  });
+
+  it('levitate zeroes out Ground multiplier', () => {
+    expect(defensiveMultiplier(mockTypeChart, 'ground', ['ghost', 'poison'], 'levitate')).toBe(0);
+  });
+
+  it('sap-sipper zeroes out Grass multiplier', () => {
+    expect(defensiveMultiplier(mockTypeChart, 'grass', ['water', null], 'sap-sipper')).toBe(0);
+  });
+
+  it('thick-fat halves Fire damage', () => {
+    expect(defensiveMultiplier(mockTypeChart, 'fire', ['normal', null], 'thick-fat')).toBe(0.5);
+  });
+
+  it('thick-fat halves Ice damage', () => {
+    expect(defensiveMultiplier(mockTypeChart, 'ice', ['normal', null], 'thick-fat')).toBe(0.5);
+  });
+
+  it('thick-fat stacks with type resistances', () => {
+    expect(defensiveMultiplier(mockTypeChart, 'fire', ['water', null], 'thick-fat')).toBe(0.25);
+  });
+
+  it('fluffy doubles Fire damage defensively', () => {
+    expect(defensiveMultiplier(mockTypeChart, 'fire', ['normal', null], 'fluffy')).toBe(2);
+  });
+
+  it('fluffy stacks with type weakness', () => {
+    expect(defensiveMultiplier(mockTypeChart, 'fire', ['grass', null], 'fluffy')).toBe(4);
+  });
+
+  it('wonder-guard does not alter any multiplier (badge-only)', () => {
+    expect(defensiveMultiplier(mockTypeChart, 'fire', ['ghost', null], 'wonder-guard')).toBe(
+      defensiveMultiplier(mockTypeChart, 'fire', ['ghost', null]),
+    );
+    expect(defensiveMultiplier(mockTypeChart, 'dark', ['ghost', null], 'wonder-guard')).toBe(
+      defensiveMultiplier(mockTypeChart, 'dark', ['ghost', null]),
+    );
+  });
+
+  it('immunity overrides even when type chart shows 0 (ground vs electric + motor-drive)', () => {
+    // Electric with motor-drive: Electric attacks deal 0 regardless
+    expect(defensiveMultiplier(mockTypeChart, 'electric', ['ground', null], 'motor-drive')).toBe(0);
+  });
+
+  it('unknown ability has no effect', () => {
+    expect(defensiveMultiplier(mockTypeChart, 'fire', ['grass', null], 'some-random-ability')).toBe(2);
+  });
+
+  it('sharedWeaknesses accounts for abilities', () => {
+    const team = [
+      { ...buildMember('Charizard', ['fire', 'flying']), ability: 'flash-fire' },
+      buildMember('Pidgey', ['normal', 'flying']),
+    ];
+    const shared = sharedWeaknesses(mockTypeChart, team);
+    expect(shared).toContain('rock');
+    expect(shared).toContain('electric');
+  });
+
+  it('defensiveProfile includes ability immunities', () => {
+    const p = defensiveProfile(mockTypeChart, ['water', 'flying'], 'volt-absorb');
+    expect(p.immunities).toContain('electric');
+    expect(p.immunities).toContain('ground');
+    expect(p.weaknesses).not.toContain('electric');
+  });
+});

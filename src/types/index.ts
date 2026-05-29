@@ -44,6 +44,7 @@ export interface TeamMember {
     PokemonMove | null,
   ];
   isCustomSaved: boolean;
+  ability?: string;
 }
 
 export interface Team {
@@ -76,6 +77,8 @@ export interface PokemonEntry {
   isLegendary: boolean;
   isMythical: boolean;
   isFinalEvolution: boolean;
+  /** Default ability slug (first non-hidden ability from PokeAPI). */
+  defaultAbility?: string;
 }
 
 export interface MoveEntry {

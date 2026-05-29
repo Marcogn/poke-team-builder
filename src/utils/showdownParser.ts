@@ -16,14 +16,14 @@ function makeUnknownMove(name: string): PokemonMove {
 
 /**
  * Convert a TeamMember to a Showdown-style block. Fields not tracked
- * (item, ability, EVs, nature) are emitted as placeholders that are valid
+ * (item, EVs, nature) are emitted as placeholders that are valid
  * to re-import.
  */
 export function exportMemberToShowdown(m: TeamMember): string {
   const lines: string[] = [];
   const itemLine = `${m.speciesName} @ `;
   lines.push(itemLine);
-  lines.push('Ability: ');
+  lines.push(`Ability: ${m.ability ?? ''}`);
   lines.push('EVs: ');
   lines.push(' Nature');
   for (const mv of m.moves) {
@@ -58,6 +58,7 @@ export function parseShowdownBlock(
   const lines = block.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   let speciesName = 'Unknown';
   let overrideTypes: [PokemonType, PokemonType | null] | null = null;
+  let ability: string | undefined;
   const moves: (PokemonMove | null)[] = [null, null, null, null];
   let moveIdx = 0;
   const unknown: string[] = [];
@@ -73,7 +74,10 @@ export function parseShowdownBlock(
         unknown.push(moveName);
       }
       if (moveIdx < 4) moves[moveIdx++] = mv;
-    } else if (/Ability:|EVs:|IVs:|Nature/i.test(line)) {
+    } else if (/^Ability:\s*/i.test(line)) {
+      const abilityValue = line.replace(/^Ability:\s*/i, '').trim();
+      if (abilityValue) ability = abilityValue;
+    } else if (/EVs:|IVs:|Nature/i.test(line)) {
       // ignored
     } else if (line.startsWith('# Types:')) {
       const parts = line.replace('# Types:', '').trim().split('/').map((p) => p.trim().toLowerCase());
@@ -98,6 +102,7 @@ export function parseShowdownBlock(
     types,
     moves: moves as TeamMember['moves'],
     isCustomSaved: false,
+    ability,
   };
   return {
     member,
