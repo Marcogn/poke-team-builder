@@ -98,10 +98,10 @@ describe('teamGenerator — generateTeam', () => {
 });
 
 describe('teamGenerator — constraint enforcement', () => {
-  it('excludes legendaries when includeLegendaries is false', () => {
+  it('excludes legendaries when legendarySlots is 0', () => {
     const constraints: GeneratorConstraints = {
       ...DEFAULT_CONSTRAINTS,
-      includeLegendaries: false,
+      legendarySlots: 0,
     };
     const result = generateTeam(
       mockTypeChart,
@@ -115,11 +115,10 @@ describe('teamGenerator — constraint enforcement', () => {
     expect(names).not.toContain('mewtwo');
   });
 
-  it('respects maxLegendaries cap', () => {
+  it('respects legendarySlots cap', () => {
     const constraints: GeneratorConstraints = {
       ...DEFAULT_CONSTRAINTS,
-      includeLegendaries: true,
-      maxLegendaries: 1,
+      legendarySlots: 1,
     };
     const result = generateTeam(
       mockTypeChart,
@@ -147,7 +146,7 @@ describe('teamGenerator — buildEligiblePool', () => {
   it('excludes legendaries when constraint says so', () => {
     const pool = buildEligiblePool(mockPokemonList, [], {
       ...DEFAULT_CONSTRAINTS,
-      includeLegendaries: false,
+      legendarySlots: 0,
     });
     expect(pool.some((p) => p.isLegendary)).toBe(false);
   });
