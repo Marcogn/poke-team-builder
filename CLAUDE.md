@@ -118,6 +118,13 @@ of `TeamMember`. The `defensiveMultiplier` function accepts an
 optional `ability?: string` parameter to apply ability-based
 immunities and multipliers (from `abilityEffects.ts`).
 
+### `src/data/typeSprites.ts`
+
+Hardcoded mapping of `PokemonType` → PokeAPI numeric type ID, plus a
+`getTypeSpriteUrl(type)` helper that returns the Scarlet/Violet small
+sprite URL. Used by `TypeBadge` for all type display. Do **not** fetch
+type IDs at runtime — they are stable constants.
+
 ### `src/data/abilityEffects.ts`
 
 Typed map of ability slugs (lowercase, hyphenated, PokeAPI format) to
@@ -298,6 +305,10 @@ for manual completion. The block is still imported.
 
 ## Common Pitfalls
 
+- **Type badge display.** `TypeBadge` renders PokeAPI type sprites (small
+  Scarlet/Violet icons) via `getTypeSpriteUrl()`. It no longer uses
+  coloured pill text or abbreviations. Do **not** re-add `abbreviated`
+  prop or inline colour classes.
 - **Sprite URLs.** Always use `resolveSpriteUrl()` from
   `src/utils/spriteUtils.ts`; never access `spriteHome`,
   `spriteArtwork`, or `spriteDefault` directly from components.
@@ -347,6 +358,17 @@ Icons are generated at build time by scripts/generate-icons.mjs
 using the sharp package. They are gitignored and regenerated
 on every deploy. Do not commit icon PNG files.
 To regenerate locally: npm run generate-icons
+
+### Searchable Dropdowns
+
+All searchable dropdowns (Pokémon picker, move picker, anchor picker in
+Surprise Me, ability picker) follow the same UX pattern:
+- On focus/open, do **not** show any list items.
+- Show placeholder "Start typing to search..." inside the input.
+- Only show results once the user has typed at least 1 character.
+- Show **all** matching results (no pagination, no item cap).
+- Dropdown list is internally scrollable (min 240px, max 40vh when
+  fixed-position mode is enabled).
 
 ### Analysis page structure
 
