@@ -4,19 +4,37 @@ import {
   TeamMember,
   TypeChart,
 } from '../types';
+import { getAbilityEffects } from '../data/abilityEffects';
 
 /**
  * Compute defensive effectiveness on a defender with one or two types.
  * Multiplies effectiveness across both defender types (stacking).
+ * When an ability is provided, immunity and multiplier effects are applied.
  */
 export function defensiveMultiplier(
   chart: TypeChart,
   attackingType: PokemonType,
   defenderTypes: [PokemonType, PokemonType | null],
+  ability?: string,
 ): number {
   const t1 = chart[attackingType]?.[defenderTypes[0]] ?? 1;
   const t2 = defenderTypes[1] ? chart[attackingType]?.[defenderTypes[1]] ?? 1 : 1;
-  return t1 * t2;
+  let result = t1 * t2;
+
+  // Apply ability effects
+  const effects = getAbilityEffects(ability);
+  if (effects) {
+    for (const effect of effects) {
+      if (effect.kind === 'immunity' && effect.type === attackingType) {
+        return 0;
+      }
+      if (effect.kind === 'multiplier' && effect.side === 'defensive' && effect.type === attackingType) {
+        result *= effect.factor;
+      }
+    }
+  }
+
+  return result;
 }
 
 /** Types this member can hit super-effectively (>=2x). */
@@ -104,12 +122,12 @@ export interface DefensiveProfile {
   immunities: PokemonType[]; // 0x
 }
 
-export function defensiveProfile(chart: TypeChart, types: [PokemonType, PokemonType | null]): DefensiveProfile {
+export function defensiveProfile(chart: TypeChart, types: [PokemonType, PokemonType | null], ability?: string): DefensiveProfile {
   const w: PokemonType[] = [];
   const r: PokemonType[] = [];
   const im: PokemonType[] = [];
   for (const atk of POKEMON_TYPES) {
-    const m = defensiveMultiplier(chart, atk, types);
+    const m = defensiveMultiplier(chart, atk, types, ability);
     if (m === 0) im.push(atk);
     else if (m > 1) w.push(atk);
     else if (m < 1) r.push(atk);
@@ -123,7 +141,7 @@ export function sharedWeaknesses(chart: TypeChart, members: TeamMember[]): Pokem
   for (const atk of POKEMON_TYPES) {
     let count = 0;
     for (const m of members) {
-      if (defensiveMultiplier(chart, atk, m.types) > 1) count++;
+      if (defensiveMultiplier(chart, atk, m.types, m.ability) > 1) count++;
     }
     if (count >= 2) result.push(atk);
   }

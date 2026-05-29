@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { POKEMON_TYPES, PokemonType, TeamMember, TypeChart } from '../../types';
-import { defensiveMultiplier, defensiveProfile, memberHasMoves, sharedWeaknesses } from '../../utils/coverageEngine';
+import { defensiveMultiplier, memberHasMoves } from '../../utils/coverageEngine';
 import { TypeBadge } from '../TypeBadge/TypeBadge';
+import { getAbilityEffects, normalizeAbilityName } from '../../data/abilityEffects';
 
 interface Props {
   chart: TypeChart;
@@ -37,7 +38,7 @@ function PerPokemonCard({ member, chart }: { member: TeamMember; chart: TypeChar
   const immune: PokemonType[] = [];
 
   for (const atk of POKEMON_TYPES) {
-    const mult = defensiveMultiplier(chart, atk, member.types);
+    const mult = defensiveMultiplier(chart, atk, member.types, member.ability);
     if (mult === 0) immune.push(atk);
     else if (mult >= 4) weak4x.push(atk);
     else if (mult >= 2) weak2x.push(atk);
@@ -68,6 +69,27 @@ function PerPokemonCard({ member, chart }: { member: TeamMember; chart: TypeChar
       </button>
       {expanded && (
         <div className="px-3 pb-3 flex flex-col gap-2 max-w-full overflow-hidden">
+          {member.ability && (() => {
+            const effects = getAbilityEffects(member.ability);
+            const isWonderGuard = normalizeAbilityName(member.ability) === 'wonder-guard';
+            const effectSummary = effects
+              ?.filter((e) => e.kind !== 'badge-only')
+              .map((e) => {
+                if (e.kind === 'immunity') return `${t('analysis.immuneTo')} ${e.type}`;
+                return `×${e.factor} ${e.type}`;
+              })
+              .join(', ');
+            return (
+              <div className="flex items-start gap-2">
+                <span className="text-sm text-gray-400 dark:text-slate-400 w-32 shrink-0">{t('slot.ability')}</span>
+                <span className="text-sm text-gray-700 dark:text-slate-200">
+                  {member.ability}
+                  {effectSummary && <span className="text-emerald-500 ml-1">— {effectSummary}</span>}
+                  {isWonderGuard && <span className="text-purple-400 ml-1">— {t('analysis.wonderGuardNote')}</span>}
+                </span>
+              </div>
+            );
+          })()}
           {weak4x.length > 0 && (
             <DefRow label={t('defensive.weaknesses4x')} types={weak4x} />
           )}
@@ -130,7 +152,7 @@ export function CoverageGrid({ chart, members }: Props) {
   for (const atk of POKEMON_TYPES) {
     let count = 0;
     for (const m of members) {
-      if (defensiveMultiplier(chart, atk, m.types) > 1) count++;
+      if (defensiveMultiplier(chart, atk, m.types, m.ability) > 1) count++;
     }
     if (count >= 2) weaknessCounts.set(atk, count);
   }
@@ -241,7 +263,7 @@ export function CoverageGrid({ chart, members }: Props) {
                     </div>
                   </td>
                   {POKEMON_TYPES.map((atk) => {
-                    const mult = defensiveMultiplier(chart, atk, m.types);
+                    const mult = defensiveMultiplier(chart, atk, m.types, m.ability);
                     return (
                       <td key={atk} className={`px-1 py-1 text-center ${cellClass(mult)}`}>
                         {multLabel(mult)}
@@ -255,7 +277,7 @@ export function CoverageGrid({ chart, members }: Props) {
                 {POKEMON_TYPES.map((atk) => {
                   let worst = 0;
                   for (const m of members) {
-                    const mult = defensiveMultiplier(chart, atk, m.types);
+                    const mult = defensiveMultiplier(chart, atk, m.types, m.ability);
                     if (mult > worst) worst = mult;
                   }
                   return (

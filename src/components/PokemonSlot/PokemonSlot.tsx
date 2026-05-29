@@ -12,6 +12,8 @@ import { SearchableDropdown, DropdownOption } from '../SearchableDropdown/Search
 import { TypeBadge } from '../TypeBadge/TypeBadge';
 import { MoveSlot } from '../MoveSlot/MoveSlot';
 import { resolveSpriteUrl } from '../../utils/spriteUtils';
+import { getAbilityEffects, normalizeAbilityName } from '../../data/abilityEffects';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   member: TeamMember | null;
@@ -77,6 +79,7 @@ export function PokemonSlot({
         types: p.types,
         moves: [null, null, null, null],
         isCustomSaved: false,
+        ability: p.defaultAbility,
       });
     }
   }
@@ -95,6 +98,13 @@ export function PokemonSlot({
     ms[i] = mv;
     onChange({ ...member, moves: ms });
   }
+
+  function setAbility(ability: string) {
+    if (!member) return;
+    onChange({ ...member, ability: ability || undefined });
+  }
+
+  const { t } = useTranslation();
 
   return (
     <div className="bg-panel rounded-lg p-3 flex flex-col gap-3 border border-panel2">
@@ -157,6 +167,45 @@ export function PokemonSlot({
               </select>
             </label>
           </div>
+
+          <label className="text-xs flex flex-col gap-1">
+            {t('slot.ability')}
+            <div className="flex items-center gap-1">
+              <input
+                type="text"
+                value={member.ability ?? ''}
+                onChange={(e) => setAbility(e.target.value)}
+                placeholder={t('slot.abilityPlaceholder')}
+                className="bg-panel2 rounded px-2 py-1 text-xs flex-1"
+              />
+              {(() => {
+                const effects = getAbilityEffects(member.ability);
+                if (!effects) return null;
+                const hasImmunity = effects.some((e) => e.kind === 'immunity');
+                const hasMultiplier = effects.some((e) => e.kind === 'multiplier');
+                const isFluffy = normalizeAbilityName(member.ability ?? '') === 'fluffy';
+                const isWonderGuard = normalizeAbilityName(member.ability ?? '') === 'wonder-guard';
+                return (
+                  <span className="relative group">
+                    {(hasImmunity || hasMultiplier) && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-700 text-white" title={
+                        effects.filter((e) => e.kind !== 'badge-only').map((e) => {
+                          if (e.kind === 'immunity') return `Immune to ${e.type}`;
+                          return `×${e.factor} ${e.type}`;
+                        }).join(', ')
+                      }>⚡</span>
+                    )}
+                    {isWonderGuard && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-700 text-white">Wonder Guard</span>
+                    )}
+                    {isFluffy && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-700 text-white" title={t('slot.fluffyNote')}>⚠️</span>
+                    )}
+                  </span>
+                );
+              })()}
+            </div>
+          </label>
 
           {showMoves && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

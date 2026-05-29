@@ -38,7 +38,9 @@
     "missingCoverage": "Missing super-effective coverage on:",
     "perPokemon": "Per-Pokémon Breakdown",
     "mostVulnerable": "Most vulnerable",
-    "teamBest": "Team best"
+    "teamBest": "Team best",
+    "immuneTo": "immune to",
+    "wonderGuardNote": "Only super-effective moves deal damage"
   },
   "suggestions": {
     "noSuggestions": "No suggestions available.",
@@ -122,5 +124,34 @@
     "resistances025x": "Resistances (¼×)",
     "immune0x": "Immune (0×)",
     "moveCoverage": "Move coverage:"
+  },
+  "slot": {
+    "ability": "Ability",
+    "abilityPlaceholder": "e.g. Levitate",
+    "fluffyNote": "×0.5 on physical contact not tracked"
+  },
+  "surpriseMe": {
+    "title": "Surprise Me 🎲",
+    "button": "Surprise me 🎲",
+    "seedStep": "Lock Pokémon (optional)",
+    "seedDescription": "Pick 0–5 Pokémon to keep in your team. The generator fills the rest.",
+    "seedWarning": "All 6 slots are locked. Remove one to generate.",
+    "constraintsStep": "Constraints",
+    "includeStarters": "Include starters",
+    "starterSlots": "Starter slots",
+    "includeLegendaries": "Include legendaries",
+    "maxLegendaries": "Max legendaries",
+    "includeMythicals": "Include mythicals",
+    "maxMythicals": "Max mythicals",
+    "includeMega": "Include Mega evolutions",
+    "includeDynamax": "Include Dynamax/Gigantamax",
+    "includeCustom": "Include custom Pokémon",
+    "generate": "Generate team",
+    "resultTitle": "Your team",
+    "createTeam": "Create team",
+    "regenerateAll": "Regenerate all 🎲",
+    "regenerateSlot": "🎲",
+    "tooFewPokemon": "Not enough eligible Pokémon to fill all slots.",
+    "back": "Back"
   }
 }

@@ -38,7 +38,9 @@
     "missingCoverage": "Copertura super-efficace mancante su:",
     "perPokemon": "Dettaglio per Pokémon",
     "mostVulnerable": "Più vulnerabile",
-    "teamBest": "Miglior team"
+    "teamBest": "Miglior team",
+    "immuneTo": "immune a",
+    "wonderGuardNote": "Solo le mosse super-efficaci infliggono danni"
   },
   "suggestions": {
     "noSuggestions": "Nessun suggerimento disponibile.",
@@ -122,5 +124,34 @@
     "resistances025x": "Resistenze (¼×)",
     "immune0x": "Immune (0×)",
     "moveCoverage": "Copertura mosse:"
+  },
+  "slot": {
+    "ability": "Abilità",
+    "abilityPlaceholder": "es. Levitazione",
+    "fluffyNote": "×0.5 su contatto fisico non tracciato"
+  },
+  "surpriseMe": {
+    "title": "Sorprendimi 🎲",
+    "button": "Sorprendimi 🎲",
+    "seedStep": "Blocca Pokémon (opzionale)",
+    "seedDescription": "Scegli 0–5 Pokémon da mantenere nel team. Il generatore riempie il resto.",
+    "seedWarning": "Tutti e 6 gli slot sono bloccati. Rimuovine uno per generare.",
+    "constraintsStep": "Vincoli",
+    "includeStarters": "Includi starter",
+    "starterSlots": "Slot starter",
+    "includeLegendaries": "Includi leggendari",
+    "maxLegendaries": "Max leggendari",
+    "includeMythicals": "Includi mitici",
+    "maxMythicals": "Max mitici",
+    "includeMega": "Includi Mega evoluzioni",
+    "includeDynamax": "Includi Dynamax/Gigantamax",
+    "includeCustom": "Includi Pokémon custom",
+    "generate": "Genera team",
+    "resultTitle": "Il tuo team",
+    "createTeam": "Crea team",
+    "regenerateAll": "Rigenera tutto 🎲",
+    "regenerateSlot": "🎲",
+    "tooFewPokemon": "Non ci sono abbastanza Pokémon idonei per riempire tutti gli slot.",
+    "back": "Indietro"
   }
 }

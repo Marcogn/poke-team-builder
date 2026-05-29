@@ -188,3 +188,54 @@ describe('showdownParser — unknown species handling', () => {
     expect(result.errors[0].name).toBe('Fakemon');
   });
 });
+
+describe('showdownParser — ability handling', () => {
+  it('parses ability line and populates member.ability', () => {
+    const paste = [
+      'Charizard @ Charcoal',
+      'Ability: Flash Fire',
+      'EVs: 252 SpA / 252 Spe',
+      'Modest Nature',
+      '- Flamethrower',
+    ].join('\n');
+    const imp = parseShowdownBlock(paste, resolveMove, resolveTypes);
+    expect(imp.member.ability).toBe('Flash Fire');
+  });
+
+  it('exports ability line when ability is set', () => {
+    const m: TeamMember = {
+      ...buildMember('Charizard', ['fire', 'flying'], ['fire']),
+      ability: 'Blaze',
+    };
+    const out = exportMemberToShowdown(m);
+    expect(out).toMatch(/Ability: Blaze/);
+  });
+
+  it('exports empty ability line when ability is undefined', () => {
+    const m = buildMember('Charizard', ['fire', 'flying']);
+    const out = exportMemberToShowdown(m);
+    expect(out).toMatch(/Ability: $/m);
+  });
+
+  it('round-trip: export with ability then re-import preserves ability', () => {
+    const original: TeamMember = {
+      ...buildMember('Charizard', ['fire', 'flying'], ['fire']),
+      ability: 'Solar Power',
+    };
+    const text = exportMemberToShowdown(original);
+    const imp = parseShowdownBlock(text, resolveMove, resolveTypes);
+    expect(imp.member.ability).toBe('Solar Power');
+  });
+
+  it('missing ability line (backward compat): member.ability is undefined', () => {
+    const paste = ['Pikachu', '- Thunderbolt'].join('\n');
+    const imp = parseShowdownBlock(paste, resolveMove, resolveTypes);
+    expect(imp.member.ability).toBeUndefined();
+  });
+
+  it('empty ability value: member.ability is undefined', () => {
+    const paste = ['Pikachu', 'Ability: ', '- Thunderbolt'].join('\n');
+    const imp = parseShowdownBlock(paste, resolveMove, resolveTypes);
+    expect(imp.member.ability).toBeUndefined();
+  });
+});
