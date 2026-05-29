@@ -83,7 +83,7 @@ export function SuggestionPanel({ suggestions, mixedMovesNote, onApply, generati
   return (
     <div className="flex flex-col gap-3">
       {mixedMovesNote && (
-        <div className="text-xs text-amber-300 bg-amber-900/30 rounded p-2">
+        <div className="text-xs text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/30 rounded p-2">
           Some Pokémon have no moves entered — using type-based coverage for those slots.
         </div>
       )}

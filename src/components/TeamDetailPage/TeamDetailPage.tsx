@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MoveEntry, PokemonEntry, Team, TeamMember, TypeChart } from '../../types';
 import { TeamBuilder } from '../TeamBuilder/TeamBuilder';
@@ -57,14 +57,25 @@ export function TeamDetailPage({
 
   const members = team.members.filter((m): m is TeamMember => m !== null);
 
+  // When the "Enable move slots" toggle is off, the analysis must ignore any
+  // moves that are still stored on the team members. We strip them here so the
+  // coverage/suggestion engines uniformly fall back to type-based coverage.
+  const analysisMembers = useMemo<TeamMember[]>(
+    () =>
+      showMoves
+        ? members
+        : members.map((m) => ({ ...m, moves: [null, null, null, null] })),
+    [members, showMoves],
+  );
+
   const filteredPool = includeMegaDynamax
     ? pokemon
     : pokemon.filter((p) => !/-mega|-gmax|-dynamax|-mega-x|-mega-y/.test(p.name));
 
-  const analysis = useCoverageAnalysis(typeChart, members);
+  const analysis = useCoverageAnalysis(typeChart, analysisMembers);
   const suggestions = useSuggestions(
     typeChart,
-    members,
+    analysisMembers,
     filteredPool,
     customs,
     { includeCustoms: includeCustomsAnalysis, excludeLegendaries, generation },
@@ -150,7 +161,7 @@ export function TeamDetailPage({
           )}
           {canAnalyse && typeChart && analysis && (
             <>
-              <CoverageGrid chart={typeChart} members={members} />
+              <CoverageGrid chart={typeChart} members={analysisMembers} />
               <section>
                 <h3 className="font-semibold mb-2 text-gray-900 dark:text-white">{t('analysis.uncoveredTypes')}</h3>
                 {analysis.team.uncovered.length === 0 ? (

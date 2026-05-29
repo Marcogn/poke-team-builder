@@ -130,6 +130,21 @@ function DefRow({ label, types }: { label: string; types: PokemonType[] }) {
   );
 }
 
+/**
+ * Shared <colgroup> used by both the offensive and defensive coverage tables so
+ * that they render with identical column widths regardless of cell content.
+ */
+function CoverageColgroup() {
+  return (
+    <colgroup>
+      <col className="w-[120px]" />
+      {POKEMON_TYPES.map((tp) => (
+        <col key={tp} className="w-[40px]" />
+      ))}
+    </colgroup>
+  );
+}
+
 export function CoverageGrid({ chart, members }: Props) {
   const { t } = useTranslation();
 
@@ -179,7 +194,8 @@ export function CoverageGrid({ chart, members }: Props) {
       <section>
         <h3 className="font-semibold mb-2 text-gray-900 dark:text-white">{t('analysis.offensiveCoverage')}</h3>
         <div className="overflow-auto scrollbar-thin">
-          <table className="text-xs border-collapse min-w-full">
+          <table className="text-xs border-collapse table-fixed min-w-[816px]">
+            <CoverageColgroup />
             <thead>
               <tr>
                 <th className="px-2 py-1 text-left sticky left-0 bg-white dark:bg-bg z-10 text-gray-900 dark:text-white">Pokémon</th>
@@ -242,7 +258,8 @@ export function CoverageGrid({ chart, members }: Props) {
       <section>
         <h3 className="font-semibold mb-2 text-gray-900 dark:text-white">{t('analysis.defensiveCoverage')}</h3>
         <div className="overflow-auto scrollbar-thin">
-          <table className="text-xs border-collapse min-w-full">
+          <table className="text-xs border-collapse table-fixed min-w-[816px]">
+            <CoverageColgroup />
             <thead>
               <tr>
                 <th className="px-2 py-1 text-left sticky left-0 bg-white dark:bg-bg z-10 text-gray-900 dark:text-white">Pokémon</th>
