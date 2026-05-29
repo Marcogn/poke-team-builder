@@ -152,5 +152,8 @@
     "back": "Indietro",
     "remainingSlots": "Slot rimanenti: {{count}}",
     "legendariesMythicals": "Leggendari / Mitici"
+  },
+  "common": {
+    "searchPlaceholder": "Inizia a digitare per cercare..."
   }
 }

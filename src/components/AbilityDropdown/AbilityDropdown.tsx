@@ -104,7 +104,7 @@ export function AbilityDropdown({ value, onChange, placeholder }: Props) {
         onChange={(e) => handleInputChange(e.target.value)}
         onFocus={() => setOpen(true)}
         onKeyDown={handleKeyDown}
-        placeholder={placeholder ?? 'Start typing to search...'}
+        placeholder={placeholder ?? t('common.searchPlaceholder')}
         className="w-full bg-panel2 rounded px-2 py-1 text-xs"
         autoComplete="off"
       />

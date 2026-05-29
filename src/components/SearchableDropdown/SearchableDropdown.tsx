@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export interface DropdownOption<T> {
   key: string;
@@ -30,6 +31,7 @@ export function SearchableDropdown<T>({
   dropdownClassName,
   useFixedPosition,
 }: Props<T>) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const ref = useRef<HTMLDivElement>(null);
@@ -87,7 +89,7 @@ export function SearchableDropdown<T>({
         autoFocus
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Start typing to search..."
+        placeholder={t('common.searchPlaceholder')}
         className="w-full px-2 py-1.5 bg-panel2 text-sm outline-none border-b border-panel2 sticky top-0"
       />
       {selected && (
@@ -105,7 +107,7 @@ export function SearchableDropdown<T>({
         <div className="px-2 py-2 text-sm text-slate-400">{emptyHint}</div>
       )}
       {filtered.length === 0 && query.trim().length === 0 && (
-        <div className="px-2 py-2 text-sm text-slate-400">Start typing to search...</div>
+        <div className="px-2 py-2 text-sm text-slate-400">{t('common.searchPlaceholder')}</div>
       )}
       {filtered.map((o) => (
         <button
