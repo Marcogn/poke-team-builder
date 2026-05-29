@@ -140,8 +140,6 @@
     "seedWarning": "All 6 slots are locked. Remove one to generate.",
     "constraintsStep": "Constraints",
     "starters": "Starters",
-    "legendaries": "Legendaries",
-    "mythicals": "Mythicals",
     "megaEvolutions": "Mega evolutions",
     "dynamaxGmax": "Dynamax/Gmax",
     "customPokemon": "Custom Pokémon",
@@ -152,6 +150,7 @@
     "regenerateSlot": "🎲",
     "tooFewPokemon": "Not enough eligible Pokémon to fill all slots.",
     "back": "Back",
-    "remainingSlots": "Remaining slots: {{count}}"
+    "remainingSlots": "Remaining slots: {{count}}",
+    "legendariesMythicals": "Legendaries / Mythicals"
   }
 }

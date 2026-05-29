@@ -98,10 +98,10 @@ describe('teamGenerator — generateTeam', () => {
 });
 
 describe('teamGenerator — constraint enforcement', () => {
-  it('excludes legendaries when legendarySlots is 0', () => {
+  it('excludes legendaries/mythicals when legendaryMythicalSlots is 0', () => {
     const constraints: GeneratorConstraints = {
       ...DEFAULT_CONSTRAINTS,
-      legendarySlots: 0,
+      legendaryMythicalSlots: 0,
     };
     const result = generateTeam(
       mockTypeChart,
@@ -115,10 +115,10 @@ describe('teamGenerator — constraint enforcement', () => {
     expect(names).not.toContain('mewtwo');
   });
 
-  it('respects legendarySlots cap', () => {
+  it('respects legendaryMythicalSlots cap', () => {
     const constraints: GeneratorConstraints = {
       ...DEFAULT_CONSTRAINTS,
-      legendarySlots: 1,
+      legendaryMythicalSlots: 1,
     };
     const result = generateTeam(
       mockTypeChart,
@@ -127,13 +127,13 @@ describe('teamGenerator — constraint enforcement', () => {
       [],
       constraints,
     );
-    const legendaryCount = result.team.filter((m) => {
+    const legendaryMythicalCount = result.team.filter((m) => {
       const entry = mockPokemonList.find(
         (p) => p.displayName === m.speciesName || p.name === m.speciesName.toLowerCase(),
       );
-      return entry?.isLegendary;
+      return entry?.isLegendary || entry?.isMythical;
     }).length;
-    expect(legendaryCount).toBeLessThanOrEqual(1);
+    expect(legendaryMythicalCount).toBeLessThanOrEqual(1);
   });
 });
 
@@ -143,12 +143,12 @@ describe('teamGenerator — buildEligiblePool', () => {
     expect(pool.every((p) => p.isFinalEvolution)).toBe(true);
   });
 
-  it('excludes legendaries when constraint says so', () => {
+  it('excludes legendaries/mythicals when constraint says so', () => {
     const pool = buildEligiblePool(mockPokemonList, [], {
       ...DEFAULT_CONSTRAINTS,
-      legendarySlots: 0,
+      legendaryMythicalSlots: 0,
     });
-    expect(pool.some((p) => p.isLegendary)).toBe(false);
+    expect(pool.some((p) => p.isLegendary || p.isMythical)).toBe(false);
   });
 });
 

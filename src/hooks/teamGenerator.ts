@@ -29,8 +29,7 @@ const ALL_STARTER_SPECIES = new Set(Object.values(STARTER_FINALS).flat());
 
 export interface GeneratorConstraints {
   starterSlots: number;
-  legendarySlots: number;
-  mythicalSlots: number;
+  legendaryMythicalSlots: number;
   megaSlots: number;
   dynamaxSlots: number;
   customSlots: number;
@@ -38,8 +37,7 @@ export interface GeneratorConstraints {
 
 export const DEFAULT_CONSTRAINTS: GeneratorConstraints = {
   starterSlots: 0,
-  legendarySlots: 0,
-  mythicalSlots: 0,
+  legendaryMythicalSlots: 0,
   megaSlots: 0,
   dynamaxSlots: 0,
   customSlots: 0,
@@ -54,9 +52,21 @@ function isStarter(entry: PokemonEntry): boolean {
   return ALL_STARTER_SPECIES.has(entry.speciesName);
 }
 
+function isLegendaryOrMythical(entry: PokemonEntry): boolean {
+  return entry.isLegendary === true || entry.isMythical === true;
+}
+
 function isMegaOrDynamax(entry: PokemonEntry): boolean {
   const name = entry.name.toLowerCase();
   return name.includes('-mega') || name.includes('-gmax');
+}
+
+function isMega(entry: PokemonEntry): boolean {
+  return entry.name.toLowerCase().includes('-mega');
+}
+
+function isDynamax(entry: PokemonEntry): boolean {
+  return entry.name.toLowerCase().includes('-gmax');
 }
 
 /**
@@ -122,6 +132,8 @@ function computeScore(
 
 /**
  * Build a filtered pool of eligible Pokémon from the full list.
+ * When a category has slots > 0, those Pokémon are included in the pool.
+ * When slots = 0, those Pokémon are excluded from the pool.
  */
 export function buildEligiblePool(
   allPokemon: PokemonEntry[],
@@ -134,19 +146,14 @@ export function buildEligiblePool(
   if (constraints.megaSlots <= 0 && constraints.dynamaxSlots <= 0) {
     pool = pool.filter((p) => !isMegaOrDynamax(p));
   } else if (constraints.megaSlots <= 0) {
-    pool = pool.filter((p) => !p.name.toLowerCase().includes('-mega'));
+    pool = pool.filter((p) => !isMega(p));
   } else if (constraints.dynamaxSlots <= 0) {
-    pool = pool.filter((p) => !p.name.toLowerCase().includes('-gmax'));
+    pool = pool.filter((p) => !isDynamax(p));
   }
 
-  // Filter legendaries: include only if slots > 0
-  if (constraints.legendarySlots <= 0) {
-    pool = pool.filter((p) => !p.isLegendary);
-  }
-
-  // Filter mythicals: include only if slots > 0
-  if (constraints.mythicalSlots <= 0) {
-    pool = pool.filter((p) => !p.isMythical);
+  // Filter legendaries/mythicals: include only if slots > 0
+  if (constraints.legendaryMythicalSlots <= 0) {
+    pool = pool.filter((p) => !isLegendaryOrMythical(p));
   }
 
   return pool;
@@ -154,6 +161,9 @@ export function buildEligiblePool(
 
 /**
  * Generate a team using the greedy coverage-maximizing algorithm.
+ * Enforces "exactly N" semantics for each constrained category:
+ * reserved slots are filled first from the category sub-pool,
+ * then free slots are filled from the unconstrained pool.
  */
 export function generateTeam(
   chart: TypeChart,
@@ -171,14 +181,10 @@ export function generateTeam(
   const team = [...lockedMembers];
   const usedSpecies = new Set(team.map((m) => m.speciesName.toLowerCase()));
 
-  // Track quotas already used by locked members
-  let legendaryCount = team.filter((m) => {
+  // Count how many constrained slots are already satisfied by locked members
+  let legendaryMythicalCount = team.filter((m) => {
     const entry = allPokemon.find((p) => p.displayName === m.speciesName || p.name === m.speciesName.toLowerCase());
-    return entry?.isLegendary;
-  }).length;
-  let mythicalCount = team.filter((m) => {
-    const entry = allPokemon.find((p) => p.displayName === m.speciesName || p.name === m.speciesName.toLowerCase());
-    return entry?.isMythical;
+    return entry ? isLegendaryOrMythical(entry) : false;
   }).length;
   let starterCount = team.filter((m) => {
     const entry = allPokemon.find((p) => p.displayName === m.speciesName || p.name === m.speciesName.toLowerCase());
@@ -186,41 +192,58 @@ export function generateTeam(
   }).length;
   let megaCount = team.filter((m) => {
     const entry = allPokemon.find((p) => p.displayName === m.speciesName || p.name === m.speciesName.toLowerCase());
-    return entry ? entry.name.toLowerCase().includes('-mega') : false;
+    return entry ? isMega(entry) : false;
   }).length;
   let dynamaxCount = team.filter((m) => {
     const entry = allPokemon.find((p) => p.displayName === m.speciesName || p.name === m.speciesName.toLowerCase());
-    return entry ? entry.name.toLowerCase().includes('-gmax') : false;
+    return entry ? isDynamax(entry) : false;
   }).length;
 
-  // Determine how many constrained slots to fill for each category
+  // Determine how many constrained slots remain to fill for each category
   let starterSlotsRemaining = Math.max(0, constraints.starterSlots - starterCount);
+  let legendaryMythicalSlotsRemaining = Math.max(0, constraints.legendaryMythicalSlots - legendaryMythicalCount);
+  let megaSlotsRemaining = Math.max(0, constraints.megaSlots - megaCount);
+  let dynamaxSlotsRemaining = Math.max(0, constraints.dynamaxSlots - dynamaxCount);
 
+  // Fill constrained slots first, then free slots
   for (let slot = 0; slot < slotsToFill; slot++) {
     let candidatePool: PokemonEntry[];
 
-    // If we need to fill starter slots first
-    if (starterSlotsRemaining > 0) {
+    if (legendaryMythicalSlotsRemaining > 0) {
+      // Fill legendary/mythical reserved slots
+      candidatePool = pool.filter((p) => isLegendaryOrMythical(p) && !usedSpecies.has(p.displayName.toLowerCase()));
+      legendaryMythicalSlotsRemaining--;
+    } else if (starterSlotsRemaining > 0) {
+      // Fill starter reserved slots
       candidatePool = pool.filter((p) => isStarter(p) && !usedSpecies.has(p.displayName.toLowerCase()));
       starterSlotsRemaining--;
+    } else if (megaSlotsRemaining > 0) {
+      // Fill mega reserved slots
+      candidatePool = pool.filter((p) => isMega(p) && !usedSpecies.has(p.displayName.toLowerCase()));
+      megaSlotsRemaining--;
+    } else if (dynamaxSlotsRemaining > 0) {
+      // Fill dynamax reserved slots
+      candidatePool = pool.filter((p) => isDynamax(p) && !usedSpecies.has(p.displayName.toLowerCase()));
+      dynamaxSlotsRemaining--;
     } else {
+      // Free slot: no category constraint, but enforce caps
       candidatePool = pool.filter((p) => !usedSpecies.has(p.displayName.toLowerCase()));
 
-      // Enforce legendary cap
-      if (constraints.legendarySlots > 0 && legendaryCount >= constraints.legendarySlots) {
-        candidatePool = candidatePool.filter((p) => !p.isLegendary);
+      // Exclude legendary/mythical if their quota is already met
+      if (constraints.legendaryMythicalSlots > 0 && legendaryMythicalCount >= constraints.legendaryMythicalSlots) {
+        candidatePool = candidatePool.filter((p) => !isLegendaryOrMythical(p));
       }
-      // Enforce mythical cap
-      if (constraints.mythicalSlots > 0 && mythicalCount >= constraints.mythicalSlots) {
-        candidatePool = candidatePool.filter((p) => !p.isMythical);
+      // Exclude starters if their quota is already met
+      if (constraints.starterSlots > 0 && starterCount >= constraints.starterSlots) {
+        candidatePool = candidatePool.filter((p) => !isStarter(p));
       }
       // Enforce mega cap
       if (constraints.megaSlots > 0 && megaCount >= constraints.megaSlots) {
-        candidatePool = candidatePool.filter((p) => !p.name.toLowerCase().includes('-mega'));
+        candidatePool = candidatePool.filter((p) => !isMega(p));
       }
       // Enforce dynamax cap
       if (constraints.dynamaxSlots > 0 && dynamaxCount >= constraints.dynamaxSlots) {
-        candidatePool = candidatePool.filter((p) => !p.name.toLowerCase().includes('-gmax'));
+        candidatePool = candidatePool.filter((p) => !isDynamax(p));
       }
     }
 
@@ -249,10 +272,10 @@ export function generateTeam(
     usedSpecies.add(best.entry.displayName.toLowerCase());
 
     // Update quotas
-    if (best.entry.isLegendary) legendaryCount++;
-    if (best.entry.isMythical) mythicalCount++;
-    if (best.entry.name.toLowerCase().includes('-mega')) megaCount++;
-    if (best.entry.name.toLowerCase().includes('-gmax')) dynamaxCount++;
+    if (isLegendaryOrMythical(best.entry)) legendaryMythicalCount++;
+    if (isStarter(best.entry)) starterCount++;
+    if (isMega(best.entry)) megaCount++;
+    if (isDynamax(best.entry)) dynamaxCount++;
   }
 
   return { team };
@@ -260,6 +283,8 @@ export function generateTeam(
 
 /**
  * Regenerate a single slot in an existing proposed team.
+ * Picks randomly among the top 5 scoring candidates.
+ * The pool excludes only Pokémon occupying the other 5 slots.
  */
 export function regenerateSlot(
   chart: TypeChart,
@@ -275,28 +300,46 @@ export function regenerateSlot(
 
   let candidatePool = pool.filter((p) => !usedSpecies.has(p.displayName.toLowerCase()));
 
-  // Enforce quotas on the other members
-  if (constraints.legendarySlots > 0) {
-    const legendaryCount = otherMembers.filter((m) => {
+  // Enforce quotas based on the other members
+  if (constraints.legendaryMythicalSlots > 0) {
+    const legendaryMythicalCount = otherMembers.filter((m) => {
       const entry = allPokemon.find((p) => p.displayName === m.speciesName || p.name === m.speciesName.toLowerCase());
-      return entry?.isLegendary;
+      return entry ? isLegendaryOrMythical(entry) : false;
     }).length;
-    if (legendaryCount >= constraints.legendarySlots) {
-      candidatePool = candidatePool.filter((p) => !p.isLegendary);
+    if (legendaryMythicalCount >= constraints.legendaryMythicalSlots) {
+      candidatePool = candidatePool.filter((p) => !isLegendaryOrMythical(p));
     }
   }
-  if (constraints.mythicalSlots > 0) {
-    const mythicalCount = otherMembers.filter((m) => {
+  if (constraints.starterSlots > 0) {
+    const starterCount = otherMembers.filter((m) => {
       const entry = allPokemon.find((p) => p.displayName === m.speciesName || p.name === m.speciesName.toLowerCase());
-      return entry?.isMythical;
+      return entry ? isStarter(entry) : false;
     }).length;
-    if (mythicalCount >= constraints.mythicalSlots) {
-      candidatePool = candidatePool.filter((p) => !p.isMythical);
+    if (starterCount >= constraints.starterSlots) {
+      candidatePool = candidatePool.filter((p) => !isStarter(p));
+    }
+  }
+  if (constraints.megaSlots > 0) {
+    const megaCount = otherMembers.filter((m) => {
+      const entry = allPokemon.find((p) => p.displayName === m.speciesName || p.name === m.speciesName.toLowerCase());
+      return entry ? isMega(entry) : false;
+    }).length;
+    if (megaCount >= constraints.megaSlots) {
+      candidatePool = candidatePool.filter((p) => !isMega(p));
+    }
+  }
+  if (constraints.dynamaxSlots > 0) {
+    const dynamaxCount = otherMembers.filter((m) => {
+      const entry = allPokemon.find((p) => p.displayName === m.speciesName || p.name === m.speciesName.toLowerCase());
+      return entry ? isDynamax(entry) : false;
+    }).length;
+    if (dynamaxCount >= constraints.dynamaxSlots) {
+      candidatePool = candidatePool.filter((p) => !isDynamax(p));
     }
   }
 
   if (candidatePool.length === 0) {
-    // Fallback: return the existing member
+    console.error(`regenerateSlot: empty candidate pool for slot ${slotIndex}. No alternatives found.`);
     return currentTeam[slotIndex];
   }
 
@@ -307,10 +350,13 @@ export function regenerateSlot(
   });
 
   scored.sort((a, b) => b.score - a.score);
-  const best = scored[0];
+
+  // Pick randomly among top 5 (or fewer if pool is small)
+  const topN = Math.min(5, scored.length);
+  const picked = scored[Math.floor(Math.random() * topN)];
 
   return {
-    ...best.member,
-    ability: best.entry.defaultAbility,
+    ...picked.member,
+    ability: picked.entry.defaultAbility,
   };
 }
