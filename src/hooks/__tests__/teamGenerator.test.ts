@@ -198,3 +198,51 @@ describe('teamGenerator — regenerateSlot', () => {
     expect(otherNames).not.toContain(newMember.speciesName.toLowerCase());
   });
 });
+
+describe('teamGenerator — anchor composite score validation', () => {
+  // Create a diverse pool with multiple Water-types and varied other types
+  const diversePool: PokemonEntry[] = [
+    // Water types (should NOT all be selected when anchor is Water/Ground)
+    { id: 260, name: 'swampert', displayName: 'Swampert', speciesName: 'swampert', types: ['water', 'ground'], spriteHome: null, spriteArtwork: null, spriteDefault: null, isLegendary: false, isMythical: false, isFinalEvolution: true },
+    { id: 9, name: 'blastoise', displayName: 'Blastoise', speciesName: 'blastoise', types: ['water', null], spriteHome: null, spriteArtwork: null, spriteDefault: null, isLegendary: false, isMythical: false, isFinalEvolution: true },
+    { id: 730, name: 'primarina', displayName: 'Primarina', speciesName: 'primarina', types: ['water', 'fairy'], spriteHome: null, spriteArtwork: null, spriteDefault: null, isLegendary: false, isMythical: false, isFinalEvolution: true },
+    { id: 503, name: 'samurott', displayName: 'Samurott', speciesName: 'samurott', types: ['water', null], spriteHome: null, spriteArtwork: null, spriteDefault: null, isLegendary: false, isMythical: false, isFinalEvolution: true },
+    { id: 131, name: 'lapras', displayName: 'Lapras', speciesName: 'lapras', types: ['water', 'ice'], spriteHome: null, spriteArtwork: null, spriteDefault: null, isLegendary: false, isMythical: false, isFinalEvolution: true },
+    // Diverse non-water types
+    { id: 6, name: 'charizard', displayName: 'Charizard', speciesName: 'charizard', types: ['fire', 'flying'], spriteHome: null, spriteArtwork: null, spriteDefault: null, isLegendary: false, isMythical: false, isFinalEvolution: true },
+    { id: 445, name: 'garchomp', displayName: 'Garchomp', speciesName: 'garchomp', types: ['dragon', 'ground'], spriteHome: null, spriteArtwork: null, spriteDefault: null, isLegendary: false, isMythical: false, isFinalEvolution: true },
+    { id: 303, name: 'mawile', displayName: 'Mawile', speciesName: 'mawile', types: ['steel', 'fairy'], spriteHome: null, spriteArtwork: null, spriteDefault: null, isLegendary: false, isMythical: false, isFinalEvolution: true },
+    { id: 700, name: 'sylveon', displayName: 'Sylveon', speciesName: 'sylveon', types: ['fairy', null], spriteHome: null, spriteArtwork: null, spriteDefault: null, isLegendary: false, isMythical: false, isFinalEvolution: true },
+    { id: 94, name: 'gengar', displayName: 'Gengar', speciesName: 'gengar', types: ['ghost', 'poison'], spriteHome: null, spriteArtwork: null, spriteDefault: null, isLegendary: false, isMythical: false, isFinalEvolution: true },
+    { id: 143, name: 'snorlax', displayName: 'Snorlax', speciesName: 'snorlax', types: ['normal', null], spriteHome: null, spriteArtwork: null, spriteDefault: null, isLegendary: false, isMythical: false, isFinalEvolution: true },
+    { id: 65, name: 'alakazam', displayName: 'Alakazam', speciesName: 'alakazam', types: ['psychic', null], spriteHome: null, spriteArtwork: null, spriteDefault: null, isLegendary: false, isMythical: false, isFinalEvolution: true },
+    { id: 68, name: 'machamp', displayName: 'Machamp', speciesName: 'machamp', types: ['fighting', null], spriteHome: null, spriteArtwork: null, spriteDefault: null, isLegendary: false, isMythical: false, isFinalEvolution: true },
+    { id: 462, name: 'magnezone', displayName: 'Magnezone', speciesName: 'magnezone', types: ['electric', 'steel'], spriteHome: null, spriteArtwork: null, spriteDefault: null, isLegendary: false, isMythical: false, isFinalEvolution: true },
+    { id: 3, name: 'venusaur', displayName: 'Venusaur', speciesName: 'venusaur', types: ['grass', 'poison'], spriteHome: null, spriteArtwork: null, spriteDefault: null, isLegendary: false, isMythical: false, isFinalEvolution: true },
+  ];
+
+  it('does not generate more than 1 additional Water-type when anchor is Swampert (Water/Ground)', () => {
+    const anchor = buildMember('Swampert', ['water', 'ground']);
+    let passCount = 0;
+    const runs = 5;
+
+    for (let i = 0; i < runs; i++) {
+      const result = generateTeam(
+        mockTypeChart,
+        diversePool,
+        [],
+        [anchor],
+        DEFAULT_CONSTRAINTS,
+      );
+      // Count water types in the generated part (exclude anchor at index 0)
+      const generatedMembers = result.team.slice(1);
+      const waterCount = generatedMembers.filter(
+        (m) => m.types[0] === 'water' || m.types[1] === 'water',
+      ).length;
+      if (waterCount <= 1) passCount++;
+    }
+
+    // Must hold in at least 4/5 runs
+    expect(passCount).toBeGreaterThanOrEqual(4);
+  });
+});

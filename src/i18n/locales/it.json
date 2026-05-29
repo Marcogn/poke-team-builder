@@ -128,7 +128,9 @@
   "slot": {
     "ability": "Abilità",
     "abilityPlaceholder": "es. Levitazione",
-    "fluffyNote": "×0.5 su contatto fisico non tracciato"
+    "fluffyNote": "×0.5 su contatto fisico non tracciato",
+    "coverageEffect": "copertura",
+    "displayOnly": "solo visualizzazione"
   },
   "surpriseMe": {
     "title": "Sorprendimi 🎲",
@@ -152,6 +154,7 @@
     "regenerateAll": "Rigenera tutto 🎲",
     "regenerateSlot": "🎲",
     "tooFewPokemon": "Non ci sono abbastanza Pokémon idonei per riempire tutti gli slot.",
-    "back": "Indietro"
+    "back": "Indietro",
+    "remainingSlots": "Slot rimanenti: {{count}}"
   }
 }

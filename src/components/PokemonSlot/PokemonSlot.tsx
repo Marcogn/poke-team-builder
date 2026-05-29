@@ -13,6 +13,7 @@ import { TypeBadge } from '../TypeBadge/TypeBadge';
 import { MoveSlot } from '../MoveSlot/MoveSlot';
 import { resolveSpriteUrl } from '../../utils/spriteUtils';
 import { getAbilityEffects, normalizeAbilityName } from '../../data/abilityEffects';
+import { AbilityDropdown } from '../AbilityDropdown/AbilityDropdown';
 import { useTranslation } from 'react-i18next';
 
 interface Props {
@@ -171,12 +172,9 @@ export function PokemonSlot({
           <label className="text-xs flex flex-col gap-1">
             {t('slot.ability')}
             <div className="flex items-center gap-1">
-              <input
-                type="text"
+              <AbilityDropdown
                 value={member.ability ?? ''}
-                onChange={(e) => setAbility(e.target.value)}
-                placeholder={t('slot.abilityPlaceholder')}
-                className="bg-panel2 rounded px-2 py-1 text-xs flex-1"
+                onChange={setAbility}
               />
               {(() => {
                 const effects = getAbilityEffects(member.ability);

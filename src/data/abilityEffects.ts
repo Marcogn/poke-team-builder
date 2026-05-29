@@ -6,6 +6,27 @@ export type AbilityEffect =
   | { kind: 'badge-only'; note: string };
 
 /**
+ * Canonical list of abilities with known coverage effects, used by the
+ * ability picker UI. Names are in display format (lowercase, space-separated).
+ */
+export const KNOWN_ABILITIES_WITH_EFFECTS: string[] = [
+  'volt absorb',
+  'lightning rod',
+  'motor drive',
+  'water absorb',
+  'storm drain',
+  'dry skin',
+  'flash fire',
+  'sap sipper',
+  'levitate',
+  'earth eater',
+  'well-baked body',
+  'thick fat',
+  'fluffy',
+  'wonder guard',
+];
+
+/**
  * Hardcoded map of ability slugs (lowercase, hyphenated, matching PokeAPI) to
  * their coverage-relevant effects. Only abilities that alter defensive
  * multipliers or warrant a UI badge are included here.

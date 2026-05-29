@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PokemonEntry, TeamMember, TypeChart } from '../../types';
 import { Modal } from '../Modal/Modal';
@@ -47,6 +47,8 @@ export function SurpriseMeModal({
   });
   const [result, setResult] = useState<TeamMember[]>([]);
   const [warning, setWarning] = useState<string | undefined>();
+  // Track order of edits for clamping: most recent field name last
+  const lastEditedRef = useRef<('starterSlots' | 'maxLegendaries' | 'maxMythicals')[]>([]);
 
   function handleClose() {
     setStep('seed');
@@ -104,7 +106,6 @@ export function SurpriseMeModal({
   }
 
   const pokemonOptions: DropdownOption<PokemonEntry>[] = pokemon
-    .filter((p) => p.isFinalEvolution)
     .map((p) => ({
       key: 'p-' + p.id,
       label: p.displayName,
@@ -114,9 +115,94 @@ export function SurpriseMeModal({
 
   const remainingSlots = 6 - lockedMembers.length;
 
+  /**
+   * Compute the total of all checked numeric constraints.
+   */
+  function getConstraintTotal(c: GeneratorConstraints): number {
+    let total = 0;
+    if (c.includeStarters) total += c.starterSlots;
+    if (c.includeLegendaries) total += c.maxLegendaries;
+    if (c.includeMythicals) total += c.maxMythicals;
+    return total;
+  }
+
+  /**
+   * Clamp all numeric constraint fields so their sum ≤ remainingSlots.
+   * The most recently edited field keeps its value; others are clamped
+   * starting from the least recently edited.
+   */
+  function clampConstraints(
+    c: GeneratorConstraints,
+    editedField: 'starterSlots' | 'maxLegendaries' | 'maxMythicals',
+  ): GeneratorConstraints {
+    // Update edit order
+    const order = lastEditedRef.current.filter((f) => f !== editedField);
+    order.push(editedField);
+    lastEditedRef.current = order;
+
+    const budget = remainingSlots;
+    const next = { ...c };
+
+    // Collect active fields in priority order (most recent last = highest priority)
+    type Field = 'starterSlots' | 'maxLegendaries' | 'maxMythicals';
+    const activeFields: { field: Field; enabled: boolean }[] = [
+      { field: 'starterSlots', enabled: next.includeStarters },
+      { field: 'maxLegendaries', enabled: next.includeLegendaries },
+      { field: 'maxMythicals', enabled: next.includeMythicals },
+    ];
+
+    // Sort by edit order: least recent first (will be clamped first)
+    const sortedActive = activeFields
+      .filter((f) => f.enabled)
+      .sort((a, b) => order.indexOf(a.field) - order.indexOf(b.field));
+
+    let totalUsed = sortedActive.reduce((sum, f) => sum + next[f.field], 0);
+
+    if (totalUsed > budget) {
+      // Clamp from least recently edited
+      for (const f of sortedActive) {
+        if (totalUsed <= budget) break;
+        const excess = totalUsed - budget;
+        const currentVal = next[f.field];
+        const reduction = Math.min(excess, currentVal - 1);
+        if (reduction > 0) {
+          next[f.field] = currentVal - reduction;
+          totalUsed -= reduction;
+        }
+      }
+    }
+
+    return next;
+  }
+
+  function handleNumericChange(
+    field: 'starterSlots' | 'maxLegendaries' | 'maxMythicals',
+    rawValue: string,
+  ) {
+    let val = parseInt(rawValue, 10);
+    if (isNaN(val) || val < 1) val = 1;
+    if (val > remainingSlots) val = remainingSlots;
+    const updated = { ...constraints, [field]: val };
+    setConstraints(clampConstraints(updated, field));
+  }
+
+  function handleNumericBlur(
+    field: 'starterSlots' | 'maxLegendaries' | 'maxMythicals',
+    rawValue: string,
+  ) {
+    const val = parseInt(rawValue, 10);
+    if (isNaN(val) || val < 1) {
+      const updated = { ...constraints, [field]: 1 };
+      setConstraints(clampConstraints(updated, field));
+    }
+  }
+
+  const usedSlots = getConstraintTotal(constraints);
+  const budgetRemaining = remainingSlots - usedSlots;
+
   return (
     <Modal open={open} onClose={handleClose}>
-      <div className="flex flex-col gap-4 max-h-[80vh] overflow-auto">
+      <div className="flex flex-col gap-3 max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-semibold">{t('surpriseMe.title')}</h2>
 
         {step === 'seed' && (
@@ -165,7 +251,10 @@ export function SurpriseMeModal({
 
         {step === 'constraints' && (
           <>
-            <div className="flex flex-col gap-3">
+            <p className="text-xs text-gray-500 dark:text-slate-400">
+              {t('surpriseMe.remainingSlots', { count: budgetRemaining >= 0 ? budgetRemaining : 0 })}
+            </p>
+            <div className="flex flex-col gap-2">
               {/* Starters */}
               <label className="flex items-center gap-2 text-sm">
                 <input
@@ -174,20 +263,18 @@ export function SurpriseMeModal({
                   onChange={(e) => setConstraints({ ...constraints, includeStarters: e.target.checked })}
                 />
                 {t('surpriseMe.includeStarters')}
-              </label>
-              {constraints.includeStarters && (
-                <label className="flex items-center gap-2 text-sm ml-6">
-                  {t('surpriseMe.starterSlots')}:
+                {constraints.includeStarters && (
                   <input
                     type="number"
                     min={1}
                     max={remainingSlots}
                     value={constraints.starterSlots}
-                    onChange={(e) => setConstraints({ ...constraints, starterSlots: Number(e.target.value) })}
-                    className="w-14 bg-panel2 rounded px-2 py-1 text-sm"
+                    onChange={(e) => handleNumericChange('starterSlots', e.target.value)}
+                    onBlur={(e) => handleNumericBlur('starterSlots', e.target.value)}
+                    className="w-12 bg-panel2 rounded px-1.5 py-0.5 text-sm ml-auto"
                   />
-                </label>
-              )}
+                )}
+              </label>
 
               {/* Legendaries */}
               <label className="flex items-center gap-2 text-sm">
@@ -197,20 +284,18 @@ export function SurpriseMeModal({
                   onChange={(e) => setConstraints({ ...constraints, includeLegendaries: e.target.checked })}
                 />
                 {t('surpriseMe.includeLegendaries')}
-              </label>
-              {constraints.includeLegendaries && (
-                <label className="flex items-center gap-2 text-sm ml-6">
-                  {t('surpriseMe.maxLegendaries')}:
+                {constraints.includeLegendaries && (
                   <input
                     type="number"
-                    min={0}
+                    min={1}
                     max={remainingSlots}
                     value={constraints.maxLegendaries}
-                    onChange={(e) => setConstraints({ ...constraints, maxLegendaries: Number(e.target.value) })}
-                    className="w-14 bg-panel2 rounded px-2 py-1 text-sm"
+                    onChange={(e) => handleNumericChange('maxLegendaries', e.target.value)}
+                    onBlur={(e) => handleNumericBlur('maxLegendaries', e.target.value)}
+                    className="w-12 bg-panel2 rounded px-1.5 py-0.5 text-sm ml-auto"
                   />
-                </label>
-              )}
+                )}
+              </label>
 
               {/* Mythicals */}
               <label className="flex items-center gap-2 text-sm">
@@ -220,20 +305,18 @@ export function SurpriseMeModal({
                   onChange={(e) => setConstraints({ ...constraints, includeMythicals: e.target.checked })}
                 />
                 {t('surpriseMe.includeMythicals')}
-              </label>
-              {constraints.includeMythicals && (
-                <label className="flex items-center gap-2 text-sm ml-6">
-                  {t('surpriseMe.maxMythicals')}:
+                {constraints.includeMythicals && (
                   <input
                     type="number"
-                    min={0}
+                    min={1}
                     max={remainingSlots}
                     value={constraints.maxMythicals}
-                    onChange={(e) => setConstraints({ ...constraints, maxMythicals: Number(e.target.value) })}
-                    className="w-14 bg-panel2 rounded px-2 py-1 text-sm"
+                    onChange={(e) => handleNumericChange('maxMythicals', e.target.value)}
+                    onBlur={(e) => handleNumericBlur('maxMythicals', e.target.value)}
+                    className="w-12 bg-panel2 rounded px-1.5 py-0.5 text-sm ml-auto"
                   />
-                </label>
-              )}
+                )}
+              </label>
 
               {/* Mega / Dynamax */}
               <label className="flex items-center gap-2 text-sm">

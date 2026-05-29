@@ -18,9 +18,11 @@ in this section._
 - Searchable picker covering every PokéAPI species and alternate form.
 - Per-slot type overrides for ROM hack typings; overrides never mutate the
   cached species data.
-- **Ability field** per slot: pre-populated from PokeAPI's default ability,
-  freely editable. Abilities with known effects (immunities, multipliers)
-  are reflected in defensive coverage analysis.
+- **Ability field** per slot: filterable dropdown showing known abilities
+  with coverage effects, plus free-text fallback for rom-hack compatibility.
+  Pre-populated from PokeAPI's default ability. Abilities with known effects
+  (immunities, multipliers) are reflected in defensive coverage analysis and
+  tagged in the dropdown.
 - Four move slots per Pokémon, picked from PokéAPI or entered as custom moves.
 - Personal custom roster: any team member can be saved, renamed, deleted,
   and re-used across teams.
