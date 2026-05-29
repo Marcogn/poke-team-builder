@@ -130,6 +130,11 @@ Do **not** add or remove entries from this map without discussion.
 The map is consumed by `coverageEngine.ts` and by UI components for
 ability badges.
 
+`KNOWN_ABILITIES_WITH_EFFECTS` is an exported array of display-format
+ability names (lowercase, space-separated) used as the canonical list
+for the ability picker dropdown UI. It contains the same abilities
+whose slugs are keys in `ABILITY_EFFECTS`.
+
 ### `src/hooks/teamGenerator.ts`
 
 Pure team generation algorithm used by the "Surprise Me" feature.
@@ -138,6 +143,18 @@ Uses the same composite score formula as the suggestion engine
 a ±0.01 random tie-breaking factor. Runs fully client-side.
 Exports: `generateTeam`, `regenerateSlot`, `buildEligiblePool`,
 `STARTER_FINALS`, `DEFAULT_CONSTRAINTS`.
+
+**Anchor inclusion:** Anchor (locked) Pokémon are included in the
+`currentTeam` from iteration step 0 of `generateTeam`. The composite
+score for each candidate is computed against the full partial team
+including anchors — never against an empty team. This ensures that
+`aggravated_shared_weaknesses` correctly counts weaknesses already
+present in the anchor set.
+
+**Slot budget constraint:** The sum of all checked numeric constraints
+(starter slots + legendary slots + mythical slots) must never exceed
+`6 - anchorCount`. The UI enforces this with automatic clamping of the
+least recently edited field when the budget is exceeded.
 
 ### `src/utils/showdownParser.ts`
 
@@ -307,3 +324,12 @@ Composite score = offensive_gain - 0.5×new_weaknesses
 See suggestionEngine.ts for full implementation.
 Do not change weights without updating this documentation
 and the tests.
+
+### Key unit tests
+
+- `teamGenerator.test.ts` — "anchor composite score validation":
+  Verifies that when anchor is Swampert (Water/Ground), the generated
+  team does not contain more than 1 additional Water-type Pokémon in
+  at least 4 out of 5 probabilistic runs. This ensures the composite
+  score correctly penalizes redundant type coverage when anchors are
+  present.
