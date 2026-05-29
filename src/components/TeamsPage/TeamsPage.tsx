@@ -9,9 +9,10 @@ interface Props {
   onImport: (text: string) => void;
   onRenameTeam: (id: string, name: string) => void;
   onDuplicateTeam: (id: string) => void;
+  onSurpriseMe: () => void;
 }
 
-export function TeamsPage({ teams, onSelectTeam, onCreateEmpty, onImport, onRenameTeam, onDuplicateTeam }: Props) {
+export function TeamsPage({ teams, onSelectTeam, onCreateEmpty, onImport, onRenameTeam, onDuplicateTeam, onSurpriseMe }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -109,6 +110,7 @@ export function TeamsPage({ teams, onSelectTeam, onCreateEmpty, onImport, onRena
         onClose={() => setModalOpen(false)}
         onCreateEmpty={onCreateEmpty}
         onImport={onImport}
+        onSurpriseMe={onSurpriseMe}
       />
     </div>
   );

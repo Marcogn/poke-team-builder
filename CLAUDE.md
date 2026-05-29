@@ -38,8 +38,10 @@ a damage calculator.
    touched during this process. UI renders only after the cache is
    complete.
 2. **Pokémon selection.** When the user picks a species in a slot, the
-   slot reads the form's types from the cache. The user can override
-   either type on that slot without affecting the cache.
+   slot reads the form's types from the cache, and pre-populates the
+   ability field from `PokemonEntry.defaultAbility`. The user can
+   override either type or the ability on that slot without affecting
+   the cache.
 3. **Analyze.** The coverage hook calls pure functions in
    `coverageEngine.ts` to produce per-member offensive coverage, the
    team union, defensive profiles, and shared weaknesses. The
@@ -112,7 +114,30 @@ Pure functions only. Owns the offensive coverage and defensive
 multiplier math used everywhere else. Must **not** import React,
 hooks, or anything from `src/hooks`. Invariant: every exported
 function is referentially transparent given a `TypeChart` and a list
-of `TeamMember`.
+of `TeamMember`. The `defensiveMultiplier` function accepts an
+optional `ability?: string` parameter to apply ability-based
+immunities and multipliers (from `abilityEffects.ts`).
+
+### `src/data/abilityEffects.ts`
+
+Typed map of ability slugs (lowercase, hyphenated, PokeAPI format) to
+coverage-relevant effects. Three effect kinds:
+- `immunity`: incoming attacks of that type deal 0 damage.
+- `multiplier`: modifies the type chart result by a factor (defensive side).
+- `badge-only`: UI-only indicator, no calculation change.
+
+Do **not** add or remove entries from this map without discussion.
+The map is consumed by `coverageEngine.ts` and by UI components for
+ability badges.
+
+### `src/hooks/teamGenerator.ts`
+
+Pure team generation algorithm used by the "Surprise Me" feature.
+Uses the same composite score formula as the suggestion engine
+(gain − 0.5×new_weaknesses − 1.0×aggravated_shared_weaknesses) with
+a ±0.01 random tie-breaking factor. Runs fully client-side.
+Exports: `generateTeam`, `regenerateSlot`, `buildEligiblePool`,
+`STARTER_FINALS`, `DEFAULT_CONSTRAINTS`.
 
 ### `src/utils/showdownParser.ts`
 
@@ -173,18 +198,20 @@ them.
 ### Read on import
 
 - Species name (first non-comment line, splits on `@`).
+- Ability line (`Ability: <name>`) — populated into `member.ability`.
 - Move lines beginning with `- `; the move name is everything after
   `- ` until end-of-line.
 - Type override comment of the form `# Types: type1[/type2]` (case
   insensitive, ignored if either type is not a valid `PokemonType`).
 
-Lines matching `Ability:`, `EVs:`, `IVs:`, or `Nature` are ignored.
+Lines matching `EVs:`, `IVs:`, or `Nature` are ignored.
 Other `#` comment lines are ignored.
 
 ### Written on export
 
 - Species name followed by `@ ` (empty item placeholder).
-- `Ability: `, `EVs: `, and ` Nature` placeholder lines.
+- `Ability: <ability>` line (ability value or empty if not set).
+- `EVs: ` and ` Nature` placeholder lines.
 - One `- <move name>` line per non-null move slot.
 - A trailing `# Types: ...` comment line preserving the slot's types.
 
@@ -202,11 +229,18 @@ for manual completion. The block is still imported.
   migration plan and a version bump on the storage key.
 - The `coverageEngine.ts` pure-function signatures. They are consumed
   by both the analysis hook and the suggestion engine and by tests.
+  Optional parameters (like `ability`) are fine to add.
 - The Showdown format contract above (`exportMemberToShowdown`,
   `parseShowdownBlock`). External users may rely on round-tripping.
 - The PWA manifest icon paths (`public/icons/icon-192x192.png`,
   `public/icons/icon-512x512.png`, `public/favicon.ico`, `public/favicon.svg`) — they are referenced by
   the `vite-plugin-pwa` config in `vite.config.ts`.
+- The `abilityEffects.ts` map entries. Do not add or remove abilities
+  without updating tests and this documentation.
+- The `STARTER_FINALS` list in `teamGenerator.ts`. Adding new
+  generations requires updating this hardcoded list.
+- The composite score weights (0.5 / 1.0) used in both suggestion
+  and team generation engines.
 
 ## Common Pitfalls
 

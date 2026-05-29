@@ -8,6 +8,7 @@ import { TeamsPage } from './components/TeamsPage/TeamsPage';
 import { TeamDetailPage } from './components/TeamDetailPage/TeamDetailPage';
 import { CustomPkmnPage } from './components/CustomRoster/CustomPkmnPage';
 import { SettingsPage } from './components/Settings/SettingsPage';
+import { SurpriseMeModal } from './components/SurpriseMe/SurpriseMeModal';
 import { parseShowdownTeam } from './utils/showdownParser';
 import { resolveSpriteUrl } from './utils/spriteUtils';
 import './i18n';
@@ -69,6 +70,7 @@ export default function App() {
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [showMoves, setShowMoves] = useState(false);
+  const [surpriseMeOpen, setSurpriseMeOpen] = useState(false);
 
   const settings: AppSettings = state.settings ?? DEFAULT_SETTINGS;
 
@@ -152,6 +154,20 @@ export default function App() {
     setState((s) => ({ ...s, teams: [...s.teams, t], activeTeamId: t.id }));
     setView({ page: 'team', teamId: t.id, tab: 'pokemon' });
   }, [state.teams.length]);
+
+  const handleSurpriseCreate = useCallback((members: TeamMember[]) => {
+    const teamMembers: (TeamMember | null)[] = members.slice(0, 6);
+    while (teamMembers.length < 6) teamMembers.push(null);
+    const t: Team = {
+      id: uuid(),
+      name: `Team ${state.teams.length + 1}`,
+      members: teamMembers,
+      createdAt: Date.now(),
+    };
+    setState((s) => ({ ...s, teams: [...s.teams, t], activeTeamId: t.id }));
+    setView({ page: 'team', teamId: t.id, tab: 'pokemon' });
+    toast('Team created');
+  }, [state.teams.length, toast]);
 
   const handleImportTeam = useCallback((text: string) => {
     const resolveMove = (name: string) => {
@@ -369,6 +385,7 @@ export default function App() {
             onImport={handleImportTeam}
             onRenameTeam={(id, name) => updateTeam(id, (t) => ({ ...t, name }))}
             onDuplicateTeam={duplicateTeam}
+            onSurpriseMe={() => setSurpriseMeOpen(true)}
           />
         )}
 
@@ -431,6 +448,17 @@ export default function App() {
           />
         )}
       </main>
+
+      <SurpriseMeModal
+        open={surpriseMeOpen}
+        onClose={() => setSurpriseMeOpen(false)}
+        onCreate={handleSurpriseCreate}
+        pokemon={data.pokemon}
+        customs={state.customPokemon}
+        typeChart={data.typeChart}
+        includeMegaDynamax={settings.includeMegaDynamax}
+        excludeLegendaries={settings.excludeLegendaries}
+      />
 
       {toastMsg && (
         <div className="fixed bottom-4 right-4 bg-white dark:bg-panel border border-gray-200 dark:border-panel2 px-3 py-2 rounded shadow-xl text-sm text-gray-900 dark:text-slate-100">

@@ -18,16 +18,25 @@ in this section._
 - Searchable picker covering every PokéAPI species and alternate form.
 - Per-slot type overrides for ROM hack typings; overrides never mutate the
   cached species data.
+- **Ability field** per slot: pre-populated from PokeAPI's default ability,
+  freely editable. Abilities with known effects (immunities, multipliers)
+  are reflected in defensive coverage analysis.
 - Four move slots per Pokémon, picked from PokéAPI or entered as custom moves.
 - Personal custom roster: any team member can be saved, renamed, deleted,
   and re-used across teams.
 - Coverage analysis: per-member offensive grid, defensive profile
   (weak/resist/immune), shared team weaknesses, uncovered types.
+  Ability-modified multipliers are shown in the defensive grid.
 - Smart suggestions: additions when the team has fewer than six members,
   weakest-link replacements when the team is full, optional inclusion of the
   custom roster, final-evolution preference, legendary handling.
+- **"Surprise Me" team generator**: generates a coverage-optimised team of 6
+  using a greedy algorithm. Supports seed Pokémon (lock 0–5 slots), and
+  constraints for starters, legendaries, mythicals, Mega/Dynamax forms,
+  and custom Pokémon. Includes per-slot regeneration.
 - Language switcher (English / Italian) with full i18n support.
 - Showdown-format import and export through clipboard or `.txt` file.
+  Ability lines are now parsed and exported.
 - PWA install support: works offline once the PokéAPI cache is built.
 - Settings panel to reset the PokéAPI data cache.
 
@@ -112,6 +121,7 @@ by blank lines.
 ### Fields the app actually tracks
 
 - **Species name** (first line, optionally followed by `@ item`).
+- **Ability** (`Ability: <name>`) — stored in the slot's `ability` field.
 - **Types**, via the trailing `# Types: <type1>[/<type2>]` comment line.
   This is how type overrides for ROM hacks round-trip.
 - **Moves**, written as lines beginning with `- `.
@@ -122,7 +132,6 @@ The following Showdown fields are exported as empty placeholders so that
 the output is still a valid Showdown paste, but the app does **not** track
 their values:
 
-- `Ability: `
 - `EVs: `
 - ` Nature`
 - The item after `@` on the species line
@@ -135,7 +144,7 @@ flagged so the user can complete it manually.
 
 ```
 Pikachu @ 
-Ability: 
+Ability: Static
 EVs: 
  Nature
 - Thunderbolt
