@@ -151,10 +151,14 @@ including anchors — never against an empty team. This ensures that
 `aggravated_shared_weaknesses` correctly counts weaknesses already
 present in the anchor set.
 
-**Slot budget constraint:** The sum of all checked numeric constraints
-(starter slots + legendary slots + mythical slots) must never exceed
-`6 - anchorCount`. The UI enforces this with automatic clamping of the
-least recently edited field when the budget is exceeded.
+**Slot budget constraint:** The constraints step uses +/- counters
+(no checkboxes). Each category (starters, legendaries, mythicals,
+mega, dynamax, custom) has a numeric counter starting at 0. The
+budget rule is: `anchorCount + sum(all counters) ≤ 6`, enforced by
+disabling the `+` button when the budget is full. No clamping — the
+`+` button simply becomes unavailable. Free slots (remainder after
+anchors + counters) are filled by the algorithm using composite score
+with no category filter.
 
 ### `src/utils/showdownParser.ts`
 

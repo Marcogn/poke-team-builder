@@ -16,6 +16,7 @@ interface Props<T> {
   renderOption?: (opt: DropdownOption<T>) => React.ReactNode;
   emptyHint?: string;
   maxVisible?: number;
+  dropdownClassName?: string;
 }
 
 export function SearchableDropdown<T>({
@@ -26,6 +27,7 @@ export function SearchableDropdown<T>({
   renderOption,
   emptyHint = 'No matches',
   maxVisible = 100,
+  dropdownClassName,
 }: Props<T>) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -67,7 +69,7 @@ export function SearchableDropdown<T>({
         <span className="ml-auto text-slate-500">▾</span>
       </button>
       {open && (
-        <div className="absolute z-30 mt-1 w-full max-h-72 overflow-y-auto bg-panel border border-panel2 rounded shadow-xl scrollbar-thin">
+        <div className={dropdownClassName ?? "absolute z-30 mt-1 w-full max-h-72 overflow-y-auto bg-panel border border-panel2 rounded shadow-xl scrollbar-thin"}>
           <input
             autoFocus
             value={query}

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PokemonEntry, TeamMember, TypeChart } from '../../types';
 import { Modal } from '../Modal/Modal';
@@ -19,8 +19,6 @@ interface Props {
   pokemon: PokemonEntry[];
   customs: TeamMember[];
   typeChart: TypeChart | null;
-  includeMegaDynamax: boolean;
-  excludeLegendaries: boolean;
 }
 
 type Step = 'seed' | 'constraints' | 'result';
@@ -32,23 +30,15 @@ export function SurpriseMeModal({
   pokemon,
   customs,
   typeChart,
-  includeMegaDynamax,
-  excludeLegendaries,
 }: Props) {
   const { t } = useTranslation();
   const [step, setStep] = useState<Step>('seed');
   const [lockedMembers, setLockedMembers] = useState<TeamMember[]>([]);
   const [constraints, setConstraints] = useState<GeneratorConstraints>({
     ...DEFAULT_CONSTRAINTS,
-    includeMega: includeMegaDynamax,
-    includeDynamax: includeMegaDynamax,
-    includeLegendaries: !excludeLegendaries,
-    includeMythicals: !excludeLegendaries,
   });
   const [result, setResult] = useState<TeamMember[]>([]);
   const [warning, setWarning] = useState<string | undefined>();
-  // Track order of edits for clamping: most recent field name last
-  const lastEditedRef = useRef<('starterSlots' | 'maxLegendaries' | 'maxMythicals')[]>([]);
 
   function handleClose() {
     setStep('seed');
@@ -113,95 +103,29 @@ export function SurpriseMeModal({
       spriteUrl: resolveSpriteUrl(p, 'dropdown'),
     }));
 
-  const remainingSlots = 6 - lockedMembers.length;
+  const anchorCount = lockedMembers.length;
+  const constraintTotal = constraints.starterSlots + constraints.legendarySlots +
+    constraints.mythicalSlots + constraints.megaSlots + constraints.dynamaxSlots +
+    constraints.customSlots;
+  const remainingSlots = 6 - anchorCount - constraintTotal;
+  const budgetFull = anchorCount + constraintTotal >= 6;
 
-  /**
-   * Compute the total of all checked numeric constraints.
-   */
-  function getConstraintTotal(c: GeneratorConstraints): number {
-    let total = 0;
-    if (c.includeStarters) total += c.starterSlots;
-    if (c.includeLegendaries) total += c.maxLegendaries;
-    if (c.includeMythicals) total += c.maxMythicals;
-    return total;
+  type CounterField = keyof GeneratorConstraints;
+
+  function handleIncrement(field: CounterField) {
+    if (budgetFull) return;
+    setConstraints((prev) => ({ ...prev, [field]: prev[field] + 1 }));
   }
 
-  /**
-   * Clamp all numeric constraint fields so their sum ≤ remainingSlots.
-   * The most recently edited field keeps its value; others are clamped
-   * starting from the least recently edited.
-   */
-  function clampConstraints(
-    c: GeneratorConstraints,
-    editedField: 'starterSlots' | 'maxLegendaries' | 'maxMythicals',
-  ): GeneratorConstraints {
-    // Update edit order
-    const order = lastEditedRef.current.filter((f) => f !== editedField);
-    order.push(editedField);
-    lastEditedRef.current = order;
-
-    const budget = remainingSlots;
-    const next = { ...c };
-
-    // Collect active fields in priority order (most recent last = highest priority)
-    type Field = 'starterSlots' | 'maxLegendaries' | 'maxMythicals';
-    const activeFields: { field: Field; enabled: boolean }[] = [
-      { field: 'starterSlots', enabled: next.includeStarters },
-      { field: 'maxLegendaries', enabled: next.includeLegendaries },
-      { field: 'maxMythicals', enabled: next.includeMythicals },
-    ];
-
-    // Sort by edit order: least recent first (will be clamped first)
-    const sortedActive = activeFields
-      .filter((f) => f.enabled)
-      .sort((a, b) => order.indexOf(a.field) - order.indexOf(b.field));
-
-    let totalUsed = sortedActive.reduce((sum, f) => sum + next[f.field], 0);
-
-    if (totalUsed > budget) {
-      // Clamp from least recently edited
-      for (const f of sortedActive) {
-        if (totalUsed <= budget) break;
-        const excess = totalUsed - budget;
-        const currentVal = next[f.field];
-        const reduction = Math.min(excess, currentVal - 1);
-        if (reduction > 0) {
-          next[f.field] = currentVal - reduction;
-          totalUsed -= reduction;
-        }
-      }
-    }
-
-    return next;
+  function handleDecrement(field: CounterField) {
+    setConstraints((prev) => ({
+      ...prev,
+      [field]: Math.max(0, prev[field] - 1),
+    }));
   }
-
-  function handleNumericChange(
-    field: 'starterSlots' | 'maxLegendaries' | 'maxMythicals',
-    rawValue: string,
-  ) {
-    let val = parseInt(rawValue, 10);
-    if (isNaN(val) || val < 1) val = 1;
-    if (val > remainingSlots) val = remainingSlots;
-    const updated = { ...constraints, [field]: val };
-    setConstraints(clampConstraints(updated, field));
-  }
-
-  function handleNumericBlur(
-    field: 'starterSlots' | 'maxLegendaries' | 'maxMythicals',
-    rawValue: string,
-  ) {
-    const val = parseInt(rawValue, 10);
-    if (isNaN(val) || val < 1) {
-      const updated = { ...constraints, [field]: 1 };
-      setConstraints(clampConstraints(updated, field));
-    }
-  }
-
-  const usedSlots = getConstraintTotal(constraints);
-  const budgetRemaining = remainingSlots - usedSlots;
 
   return (
-    <Modal open={open} onClose={handleClose}>
+    <Modal open={open} onClose={handleClose} allowOverflow>
       <div className="flex flex-col gap-3 max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-semibold">{t('surpriseMe.title')}</h2>
 
@@ -216,6 +140,7 @@ export function SurpriseMeModal({
               value={null}
               placeholder="Choose Pokémon…"
               onChange={addLocked}
+              dropdownClassName="absolute z-[110] mt-1 w-full max-h-[min(24rem,80vh)] overflow-y-auto bg-panel border border-panel2 rounded shadow-xl scrollbar-thin"
             />
             <div className="flex flex-wrap gap-2">
               {lockedMembers.map((m, i) => (
@@ -251,100 +176,45 @@ export function SurpriseMeModal({
 
         {step === 'constraints' && (
           <>
-            <p className="text-xs text-gray-500 dark:text-slate-400">
-              {t('surpriseMe.remainingSlots', { count: budgetRemaining >= 0 ? budgetRemaining : 0 })}
+            <p className="text-sm font-medium text-gray-700 dark:text-slate-300">
+              {t('surpriseMe.remainingSlots', { count: remainingSlots >= 0 ? remainingSlots : 0 })}
             </p>
             <div className="flex flex-col gap-2">
-              {/* Starters */}
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={constraints.includeStarters}
-                  onChange={(e) => setConstraints({ ...constraints, includeStarters: e.target.checked })}
-                />
-                {t('surpriseMe.includeStarters')}
-                {constraints.includeStarters && (
-                  <input
-                    type="number"
-                    min={1}
-                    max={remainingSlots}
-                    value={constraints.starterSlots}
-                    onChange={(e) => handleNumericChange('starterSlots', e.target.value)}
-                    onBlur={(e) => handleNumericBlur('starterSlots', e.target.value)}
-                    className="w-12 bg-panel2 rounded px-1.5 py-0.5 text-sm ml-auto"
-                  />
-                )}
-              </label>
-
-              {/* Legendaries */}
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={constraints.includeLegendaries}
-                  onChange={(e) => setConstraints({ ...constraints, includeLegendaries: e.target.checked })}
-                />
-                {t('surpriseMe.includeLegendaries')}
-                {constraints.includeLegendaries && (
-                  <input
-                    type="number"
-                    min={1}
-                    max={remainingSlots}
-                    value={constraints.maxLegendaries}
-                    onChange={(e) => handleNumericChange('maxLegendaries', e.target.value)}
-                    onBlur={(e) => handleNumericBlur('maxLegendaries', e.target.value)}
-                    className="w-12 bg-panel2 rounded px-1.5 py-0.5 text-sm ml-auto"
-                  />
-                )}
-              </label>
-
-              {/* Mythicals */}
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={constraints.includeMythicals}
-                  onChange={(e) => setConstraints({ ...constraints, includeMythicals: e.target.checked })}
-                />
-                {t('surpriseMe.includeMythicals')}
-                {constraints.includeMythicals && (
-                  <input
-                    type="number"
-                    min={1}
-                    max={remainingSlots}
-                    value={constraints.maxMythicals}
-                    onChange={(e) => handleNumericChange('maxMythicals', e.target.value)}
-                    onBlur={(e) => handleNumericBlur('maxMythicals', e.target.value)}
-                    className="w-12 bg-panel2 rounded px-1.5 py-0.5 text-sm ml-auto"
-                  />
-                )}
-              </label>
-
-              {/* Mega / Dynamax */}
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={constraints.includeMega}
-                  onChange={(e) => setConstraints({ ...constraints, includeMega: e.target.checked })}
-                />
-                {t('surpriseMe.includeMega')}
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={constraints.includeDynamax}
-                  onChange={(e) => setConstraints({ ...constraints, includeDynamax: e.target.checked })}
-                />
-                {t('surpriseMe.includeDynamax')}
-              </label>
-
-              {/* Custom */}
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={constraints.includeCustom}
-                  onChange={(e) => setConstraints({ ...constraints, includeCustom: e.target.checked })}
-                />
-                {t('surpriseMe.includeCustom')}
-              </label>
+              {([
+                { field: 'starterSlots' as CounterField, label: t('surpriseMe.starters') },
+                { field: 'legendarySlots' as CounterField, label: t('surpriseMe.legendaries') },
+                { field: 'mythicalSlots' as CounterField, label: t('surpriseMe.mythicals') },
+                { field: 'megaSlots' as CounterField, label: t('surpriseMe.megaEvolutions') },
+                { field: 'dynamaxSlots' as CounterField, label: t('surpriseMe.dynamaxGmax') },
+                ...(customs.length > 0
+                  ? [{ field: 'customSlots' as CounterField, label: t('surpriseMe.customPokemon') }]
+                  : []),
+              ]).map(({ field, label }) => (
+                <div key={field} className="flex items-center justify-between text-sm">
+                  <span>{label}</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      className="w-9 h-9 flex items-center justify-center rounded bg-panel2 hover:bg-panel text-lg font-bold disabled:opacity-30 disabled:cursor-not-allowed"
+                      disabled={constraints[field] <= 0}
+                      onClick={() => handleDecrement(field)}
+                      aria-label={`Decrease ${label}`}
+                    >
+                      −
+                    </button>
+                    <span className="w-8 text-center tabular-nums font-semibold">{constraints[field]}</span>
+                    <button
+                      type="button"
+                      className="w-9 h-9 flex items-center justify-center rounded bg-panel2 hover:bg-panel text-lg font-bold disabled:opacity-30 disabled:cursor-not-allowed"
+                      disabled={budgetFull}
+                      onClick={() => handleIncrement(field)}
+                      aria-label={`Increase ${label}`}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
             <div className="flex gap-2 justify-end">
               <button

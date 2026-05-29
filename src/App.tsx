@@ -456,8 +456,6 @@ export default function App() {
         pokemon={data.pokemon}
         customs={state.customPokemon}
         typeChart={data.typeChart}
-        includeMegaDynamax={settings.includeMegaDynamax}
-        excludeLegendaries={settings.excludeLegendaries}
       />
 
       {toastMsg && (
