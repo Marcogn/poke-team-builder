@@ -100,7 +100,7 @@ export function AbilityDropdown({ value, onChange, placeholder }: Props) {
       <input
         ref={inputRef}
         type="text"
-        value={open ? (query !== '' ? query : value) : value}
+        value={open && query !== '' ? query : value}
         onChange={(e) => handleInputChange(e.target.value)}
         onFocus={() => setOpen(true)}
         onKeyDown={handleKeyDown}
