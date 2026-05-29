@@ -144,7 +144,7 @@ describe('surpriseMe — re-randomize slot', () => {
     }
 
     // With top-5 random pick, should get at least 2 different results over 20 tries
-    expect(results.size).toBeGreaterThanOrEqual(1);
+    expect(results.size).toBeGreaterThanOrEqual(2);
     // The slot should produce a valid Pokémon (not undefined)
     const lastResult = regenerateSlot(
       mockTypeChart,
