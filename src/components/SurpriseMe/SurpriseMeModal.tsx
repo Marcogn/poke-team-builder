@@ -43,6 +43,7 @@ export function SurpriseMeModal({
   function handleClose() {
     setStep('seed');
     setLockedMembers([]);
+    setConstraints({ ...DEFAULT_CONSTRAINTS });
     setResult([]);
     setWarning(undefined);
     onClose();
