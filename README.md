@@ -34,9 +34,12 @@ in this section._
   custom roster, final-evolution preference, legendary handling.
 - **"Surprise Me" team generator**: generates a coverage-optimised team of 6
   using a greedy algorithm. Supports seed Pokémon (lock 0–5 slots), and
-  +/− counter constraints for starters, legendaries, mythicals, Mega/Dynamax
-  forms, and custom Pokémon. Budget rule: anchors + counters ≤ 6; remaining
-  slots are filled freely by composite score. Includes per-slot regeneration.
+  +/− counter constraints for starters, legendaries/mythicals (merged),
+  Mega/Dynamax forms, and custom Pokémon. All counters use "exactly N"
+  semantics — reserved slots are filled first from the category sub-pool.
+  Budget rule: anchors + counters ≤ 6; remaining slots are filled freely
+  by composite score. Includes per-slot regeneration (random pick among
+  top 5 candidates).
 - Language switcher (English / Italian) with full i18n support.
 - Showdown-format import and export through clipboard or `.txt` file.
   Ability lines are now parsed and exported.

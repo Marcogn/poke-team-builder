@@ -152,13 +152,46 @@ including anchors — never against an empty team. This ensures that
 present in the anchor set.
 
 **Slot budget constraint:** The constraints step uses +/- counters
-(no checkboxes). Each category (starters, legendaries, mythicals,
+(no checkboxes). Each category (starters, legendaries/mythicals,
 mega, dynamax, custom) has a numeric counter starting at 0. The
 budget rule is: `anchorCount + sum(all counters) ≤ 6`, enforced by
 disabling the `+` button when the budget is full. No clamping — the
 `+` button simply becomes unavailable. Free slots (remainder after
 anchors + counters) are filled by the algorithm using composite score
 with no category filter.
+
+**Legendaries and Mythicals — merged counter:** A single counter
+`legendaryMythicalSlots` controls both legendary and mythical
+Pokémon. The pool includes any entry where `isLegendary === true ||
+isMythical === true`. The old separate `legendarySlots` and
+`mythicalSlots` fields have been removed.
+
+**"Exactly N" constraint semantics:** All constrained counters use
+"exactly N" semantics. The algorithm:
+1. Reserves N slots for each constrained category.
+2. Fills reserved slots first by running the composite score only
+   over the category sub-pool.
+3. Fills remaining free slots from the unconstrained pool, excluding
+   category members whose quota is already met.
+
+Categories and their filters:
+- **Starters:** `STARTER_FINALS` species set membership.
+- **Legendaries / Mythicals:** `isLegendary === true || isMythical === true`.
+- **Mega evolutions:** name includes `-mega`.
+- **Dynamax/Gmax:** name includes `-gmax`.
+
+**Data field audit (isLegendary / isMythical):** The fields in
+`src/data/pokemon-data.json` are `isLegendary` (boolean) and
+`isMythical` (boolean), matching the PokeAPI species endpoint's
+`is_legendary` and `is_mythical` fields. Verified: Mewtwo has
+`isLegendary: true`, Mew has `isMythical: true`, Articuno/Rayquaza
+have `isLegendary: true`, and non-legendaries like Cinccino have
+both set to `false`.
+
+**Per-slot re-randomize:** `regenerateSlot` picks randomly among the
+top 5 scoring candidates from a pool that excludes only the other 5
+team members. Logs `console.error` and returns the existing member
+unchanged when the candidate pool is empty.
 
 ### `src/utils/showdownParser.ts`
 

@@ -105,8 +105,8 @@ export function SurpriseMeModal({
     }));
 
   const anchorCount = lockedMembers.length;
-  const constraintTotal = constraints.starterSlots + constraints.legendarySlots +
-    constraints.mythicalSlots + constraints.megaSlots + constraints.dynamaxSlots +
+  const constraintTotal = constraints.starterSlots + constraints.legendaryMythicalSlots +
+    constraints.megaSlots + constraints.dynamaxSlots +
     constraints.customSlots;
   const remainingSlots = 6 - anchorCount - constraintTotal;
   const budgetFull = anchorCount + constraintTotal >= 6;
@@ -141,7 +141,7 @@ export function SurpriseMeModal({
               value={null}
               placeholder="Choose Pokémon…"
               onChange={addLocked}
-              dropdownClassName="absolute z-[110] mt-1 w-full max-h-[min(24rem,80vh)] overflow-y-auto bg-panel border border-panel2 rounded shadow-xl scrollbar-thin"
+              useFixedPosition
             />
             <div className="flex flex-wrap gap-2">
               {lockedMembers.map((m, i) => (
@@ -183,8 +183,7 @@ export function SurpriseMeModal({
             <div className="flex flex-col gap-2">
               {([
                 { field: 'starterSlots' as CounterField, label: t('surpriseMe.starters') },
-                { field: 'legendarySlots' as CounterField, label: t('surpriseMe.legendaries') },
-                { field: 'mythicalSlots' as CounterField, label: t('surpriseMe.mythicals') },
+                { field: 'legendaryMythicalSlots' as CounterField, label: t('surpriseMe.legendariesMythicals') },
                 { field: 'megaSlots' as CounterField, label: t('surpriseMe.megaEvolutions') },
                 { field: 'dynamaxSlots' as CounterField, label: t('surpriseMe.dynamaxGmax') },
                 ...(customs.length > 0
