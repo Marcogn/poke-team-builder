@@ -925,3 +925,57 @@ findings not yet acted on.
   way — and the plan's own §5.4 explicitly frames "displayName match
   first" as the behavior to preserve, so the two-map version is the
   intended, not merely tolerated, semantics.
+
+## Showdown format compatibility (post-Phase 7)
+
+- **`parseShowdownBlock` mistook any unrecognized line for a new species
+  line, not just the block's first one.** Verified against the real
+  client's own grammar (`sim/teams.ts` in smogon/pokemon-showdown,
+  `exportSet`/`parseExportedTeamLine`): a genuine Showdown export commonly
+  includes `Level:`, `Shiny: Yes`, `Tera Type:`, `Happiness:`,
+  `Pokeball:`, `Hidden Power:`, `Dynamax Level:` and `Gigantamax: Yes`
+  lines, none of which this app tracks — but the old `when` block's final
+  branch (`!line.startsWith("#")`) treated *every* line that wasn't a
+  move, an `Ability:` line, or an EVs/IVs/Nature line as a fresh species
+  line, silently overwriting whatever had already been parsed. Pasting
+  almost any real-world set with a `Level:` or (very common in Gen 9)
+  `Tera Type:` line therefore corrupted `speciesName` to that line's text
+  and broke species resolution. Fixed by tracking each line's position
+  (`forEachIndexed`) and only ever treating index 0 as the species line —
+  the same `isFirstLine` split the real client's own parser uses — with
+  every other unrecognized line now silently ignored instead of
+  overwriting anything, and an explicit ignore-list for the ten field
+  prefixes above.
+- **The species line now also strips a nickname wrapper and a trailing
+  gender marker**, e.g. `Volt Turtle (Pikachu) @ Light Ball` or
+  `Pikachu (F) @ Light Ball` — both common in real pastes (nicknamed
+  Pokémon, VGC sets with explicit gender) and previously left whole,
+  which meant `resolveSpecies` was called with a string that could never
+  match a real species name. Same order of operations as the real
+  client's `parseExportedTeamLine`: split the item off first, then strip
+  `" (M)"`/`" (F)"`, then unwrap `"Name (Species)"`.
+- **`Trait: <ability>` is now accepted as a legacy alias for
+  `Ability: <ability>`** — the real client still parses it (pre-Gen-6
+  sets, and some third-party tools, still emit it) and previously it fell
+  into the same species-line bug above.
+- **The exporter no longer writes blank `Ability:`/`EVs:`/`Nature`
+  placeholder lines, or a bare trailing `@ ` with no item.** These were
+  only ever safe to re-import because CoverDex's own parser explicitly
+  ignored them and the real client's line-matching happens to fail too
+  once each line is `.trim()`-med (`"EVs: "` trimmed no longer starts
+  with the 5-character prefix `"EVs: "`) — accidentally harmless, not
+  correct. Real Showdown's own `exportSet` omits a field's line entirely
+  when it's unset (`if (set.ability) …`, `if (stats.length) …`), so the
+  exporter now does the same: `Ability:` is only written when
+  `TeamMember.ability` is non-null, and EVs/IVs/Nature are omitted
+  outright since they are still untracked (out of scope — see
+  `docs/plan/native-spec.md`, "Explicitly out of scope", "EV/IV
+  tracking"). Existing tests asserting the old blank-line shape were
+  updated to assert the lines are absent instead.
+- **The `# Types: fire/flying` comment line is intentionally left as
+  CoverDex's own extension.** Confirmed against the real parser that any
+  line not matching a known prefix (species/`Ability:`/`Trait:`/EVs:`/
+  `IVs:`/nature/moves/the eight ignored-detail prefixes) is silently
+  skipped, never erroring or corrupting a later field — so this
+  round-trips through the real client untouched, and through CoverDex's
+  own parser as the type-override signal it always was.

@@ -6,6 +6,24 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- **Fixed Showdown import silently corrupting the species on any set with a
+  `Level:`, `Tera Type:`, `Shiny:`, or similar optional field.** Verified
+  against Pokémon Showdown's own text-format grammar
+  (`sim/teams.ts` in smogon/pokemon-showdown): the parser used to treat
+  any unrecognized line as a fresh species line, so pasting a real,
+  everyday Showdown export (Gen 9 sets almost always carry a
+  `Tera Type:` line) overwrote the species with that line's text and
+  broke import. Only the block's first line is a species line now, every
+  other unrecognized line is ignored, and nickname/gender markers
+  (`Volt Turtle (Pikachu) @ Light Ball`, `Pikachu (F)`) are stripped
+  before matching — see `docs/implementation-decisions.md`, "Showdown
+  format compatibility".
+- **Showdown export no longer writes blank `Ability:`/`EVs:`/`Nature`
+  placeholder lines or a dangling `@ ` with nothing after it.** Real
+  Showdown omits a field's line entirely when it's unset; the exported
+  text now matches that shape exactly instead of relying on the real
+  client happening to ignore the old placeholders.
+
 ## [2.0.1] - 2026-09-06
 
 - **Fixed a crash in "Regenerate" (Surprise Me).** `regenerateSlot`'s

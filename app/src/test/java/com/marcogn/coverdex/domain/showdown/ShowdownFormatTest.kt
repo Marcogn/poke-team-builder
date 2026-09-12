@@ -50,14 +50,25 @@ class ShowdownFormatTest {
 
     @Test
     fun `exports a complete team member with all fields`() {
-        val m = buildMember("Charizard", PokemonType.FIRE to PokemonType.FLYING, listOf(PokemonType.FIRE, PokemonType.GROUND, PokemonType.DRAGON, PokemonType.FIRE))
+        val m = buildMember(
+            "Charizard",
+            PokemonType.FIRE to PokemonType.FLYING,
+            listOf(PokemonType.FIRE, PokemonType.GROUND, PokemonType.DRAGON, PokemonType.FIRE),
+            ability = "Blaze",
+        ).copy(item = "Charcoal")
         val out = exportMemberToShowdown(m)
-        assertTrue(out.startsWith("Charizard @"))
-        assertTrue(out.contains("Ability:"))
-        assertTrue(out.contains("EVs:"))
-        assertTrue(out.contains("Nature"))
+        assertTrue(out.startsWith("Charizard @ Charcoal"))
+        assertTrue(out.contains("Ability: Blaze"))
         assertTrue(out.contains("- fire-move"))
         assertTrue(out.contains("# Types: fire/flying"))
+    }
+
+    @Test
+    fun `never emits blank EVs or Nature lines, real Showdown omits them when unset`() {
+        val m = buildMember("Charizard", PokemonType.FIRE to PokemonType.FLYING, listOf(PokemonType.FIRE))
+        val out = exportMemberToShowdown(m)
+        assertTrue(out.lines().none { it.startsWith("EVs:") })
+        assertTrue(out.lines().none { it.trim() == "Nature" || it.endsWith(" Nature") })
     }
 
     @Test
@@ -210,10 +221,10 @@ class ShowdownFormatTest {
     }
 
     @Test
-    fun `exports empty ability line when ability is null`() {
+    fun `omits the Ability line entirely when ability is null, matches real Showdown`() {
         val m = buildMember("Charizard", PokemonType.FIRE to PokemonType.FLYING)
         val out = exportMemberToShowdown(m)
-        assertTrue(out.lines().any { it == "Ability: " })
+        assertTrue(out.lines().none { it.startsWith("Ability:") })
     }
 
     @Test
@@ -255,10 +266,10 @@ class ShowdownFormatTest {
     }
 
     @Test
-    fun `exports the bare @ line when no item is set, same as before Phase 7`() {
+    fun `exports the bare species line with no trailing at-sign when no item is set`() {
         val m = buildMember("Charizard", PokemonType.FIRE to PokemonType.FLYING)
         val out = exportMemberToShowdown(m)
-        assertTrue(out.lines().first() == "Charizard @ ")
+        assertTrue(out.lines().first() == "Charizard")
     }
 
     @Test
@@ -281,5 +292,78 @@ class ShowdownFormatTest {
         val paste = listOf("Pikachu @ ", "- Thunderbolt").joinToString("\n")
         val imp = parseShowdownBlock(paste, ::resolveMove, ::resolveSpecies)
         assertNull(imp.member.item)
+    }
+
+    // ---- real Showdown compatibility (verified against sim/teams.ts in
+    // smogon/pokemon-showdown) — a genuine paste from the real client commonly includes lines
+    // this app doesn't model (Level, Tera Type, Shiny, ...); those must never be mistaken for
+    // the species line, which is always the block's first line only. ----
+
+    @Test
+    fun `a real Showdown paste with Level and Tera Type does not corrupt the species`() {
+        val paste = listOf(
+            "Charizard @ Choice Scarf",
+            "Ability: Blaze",
+            "Level: 50",
+            "Shiny: Yes",
+            "Tera Type: Water",
+            "EVs: 252 Atk / 4 Def / 252 Spe",
+            "Jolly Nature",
+            "- Flamethrower",
+            "- Earthquake",
+        ).joinToString("\n")
+        val imp = parseShowdownBlock(paste, ::resolveMove, ::resolveSpecies)
+        assertTrue(imp.speciesKnown)
+        assertEquals("Charizard", imp.member.speciesName)
+        assertEquals("Blaze", imp.member.ability)
+        assertEquals("Choice Scarf", imp.member.item)
+    }
+
+    @Test
+    fun `Happiness, Pokeball, Hidden Power and Dynamax Level lines are ignored, not treated as species`() {
+        val paste = listOf(
+            "Snorlax @ Leftovers",
+            "Happiness: 0",
+            "Pokeball: Friend Ball",
+            "Hidden Power: Ice",
+            "Dynamax Level: 10",
+            "Gigantamax: Yes",
+            "- Tackle",
+        ).joinToString("\n")
+        val imp = parseShowdownBlock(paste, ::resolveMove, ::resolveSpecies)
+        assertTrue(imp.speciesKnown)
+        assertEquals("Snorlax", imp.member.speciesName)
+    }
+
+    @Test
+    fun `strips a nickname wrapper from the species line, real Showdown nickname format`() {
+        val paste = listOf("Volt Turtle (Pikachu) @ Light Ball", "- Thunderbolt").joinToString("\n")
+        val imp = parseShowdownBlock(paste, ::resolveMove, ::resolveSpecies)
+        assertTrue(imp.speciesKnown)
+        assertEquals("Pikachu", imp.member.speciesName)
+        assertEquals("Light Ball", imp.member.item)
+    }
+
+    @Test
+    fun `strips a trailing gender marker from the species line`() {
+        val paste = listOf("Pikachu (F) @ Light Ball", "- Thunderbolt").joinToString("\n")
+        val imp = parseShowdownBlock(paste, ::resolveMove, ::resolveSpecies)
+        assertTrue(imp.speciesKnown)
+        assertEquals("Pikachu", imp.member.speciesName)
+    }
+
+    @Test
+    fun `Trait line is a legacy alias for Ability`() {
+        val paste = listOf("Charizard", "Trait: Blaze", "- Flamethrower").joinToString("\n")
+        val imp = parseShowdownBlock(paste, ::resolveMove, ::resolveSpecies)
+        assertEquals("Blaze", imp.member.ability)
+    }
+
+    @Test
+    fun `an unrecognized non-first line is ignored rather than overwriting the species`() {
+        val paste = listOf("Pikachu @ Light Ball", "totally unrecognized junk", "- Thunderbolt").joinToString("\n")
+        val imp = parseShowdownBlock(paste, ::resolveMove, ::resolveSpecies)
+        assertTrue(imp.speciesKnown)
+        assertEquals("Pikachu", imp.member.speciesName)
     }
 }
