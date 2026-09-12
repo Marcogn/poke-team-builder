@@ -1008,9 +1008,12 @@ Rather than repeat that mistake, this asset was scaled and padded
 3. Compute the scale factor that brings that farthest pixel to just
    inside Android's documented safe zone: a circle 66dp in diameter,
    centered in the 108dp adaptive-icon canvas
-   (<https://developer.android.com/develop/ui/views/launch/icon_design_adaptive>) —
-   with a small margin so the result sits just inside that guarantee
-   rather than exactly on its edge.
+   (<https://developer.android.com/develop/ui/views/launch/icon_design_adaptive>).
+   Binary-searched for the largest scale (~61%) that still leaves zero
+   pixels outside that circle differing from the background color — the
+   icon is as large as it can be without starting to risk real cropping
+   on some launcher's mask shape, not an arbitrarily conservative
+   shrink.
 4. Resize the *entire* source image (art and background together) by
    that factor and center it on a same-size canvas filled with the same
    background color — since the fill color matches the source's own
