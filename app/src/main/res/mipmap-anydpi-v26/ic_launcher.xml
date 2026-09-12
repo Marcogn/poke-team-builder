@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- The icon is a single raster image (mipmap/ic_launcher_background, one PNG per density) with
+     the foreground layer left transparent. The system always masks an <adaptive-icon> to the
+     current launcher's shape (circle, squircle, rounded square, ...) regardless of which layer
+     the art sits in, so the PNG's own artwork is pre-scaled and padded to sit inside the
+     66dp/108dp safe zone Android guarantees is never clipped by any mask shape — see
+     docs/implementation-decisions.md's "New app icon" entry. -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@mipmap/ic_launcher_background"/>
-    <foreground>
-        <inset android:drawable="@mipmap/ic_launcher_foreground" android:inset="16.7%" />
-    </foreground>
+    <background android:drawable="@mipmap/ic_launcher_background" />
+    <foreground android:drawable="@android:color/transparent" />
 </adaptive-icon>

@@ -6,6 +6,13 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- **New app icon.** Replaced the launcher icon carried over verbatim from
+  the Capacitor build with new artwork (a red Pokédex-style handheld next
+  to a notepad and pencil). The artwork is scaled to ~60% and centered so
+  it stays fully inside Android's 66dp/108dp adaptive-icon safe zone —
+  verified with a pixel-level check that no visible content falls outside
+  that zone under any launcher mask shape (circle, squircle, rounded
+  square) — see `docs/implementation-decisions.md`, "New app icon".
 - **Fixed Showdown import silently corrupting the species on any set with a
   `Level:`, `Tera Type:`, `Shiny:`, or similar optional field.** Verified
   against Pokémon Showdown's own text-format grammar

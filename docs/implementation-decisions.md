@@ -979,3 +979,53 @@ findings not yet acted on.
   skipped, never erroring or corrupting a later field — so this
   round-trips through the real client untouched, and through CoverDex's
   own parser as the type-override signal it always was.
+
+## New app icon
+
+The launcher icon carried over from the Capacitor build (see "The launcher
+icon is a verbatim copy..." above) was replaced with new, purpose-made
+artwork — a red Pokédex-style handheld next to a notepad and pencil,
+supplied as a single flattened 1254×1254 raster (art + solid blue
+background baked into one image, not separate foreground/background
+layers).
+
+The sibling repo HackDex-Tracker shipped this exact kind of asset once
+before and got it wrong: it treated a full-bleed raster as automatically
+exempt from adaptive-icon masking just because the foreground layer was
+transparent, and it wasn't — every launcher clips an `<adaptive-icon>`'s
+*composite* to its own mask shape (circle, squircle, rounded square, ...)
+regardless of which layer the visible art sits in, and real devices cut
+straight through that badge's artwork before it was fixed (see that
+repo's `docs/implementation-decisions.md`, "Adaptive icon safe zone").
+Rather than repeat that mistake, this asset was scaled and padded
+*before* ever reaching a device:
+
+1. Sample the source image's background color from its border pixels
+   (a uniform blue, `rgb(25, 129, 238)` give or take JPEG-ish noise).
+2. Find the farthest pixel from center that differs meaningfully from
+   that background color — the true visual extent of the artwork, not
+   just its bounding box.
+3. Compute the scale factor that brings that farthest pixel to just
+   inside Android's documented safe zone: a circle 66dp in diameter,
+   centered in the 108dp adaptive-icon canvas
+   (<https://developer.android.com/develop/ui/views/launch/icon_design_adaptive>) —
+   with a small margin so the result sits just inside that guarantee
+   rather than exactly on its edge.
+4. Resize the *entire* source image (art and background together) by
+   that factor and center it on a same-size canvas filled with the same
+   background color — since the fill color matches the source's own
+   background exactly, there is no visible seam.
+5. Verify by simulating the 66dp/108dp circular mask over the result and
+   confirming zero pixels outside it differ from the background color.
+
+`ic_launcher_background.png` is this composited, verified image at every
+density (`mdpi` 108px through `xxxhdpi` 432px); `ic_launcher.xml`/
+`ic_launcher_round.xml` set the foreground to `@android:color/transparent`
+and no longer reference an `ic_launcher_foreground.png` (deleted — there
+is no separate foreground art to inset). The legacy pre-API-26
+`ic_launcher.png` is the same composited image at the legacy sizes;
+`ic_launcher_round.png` is the same again masked to a circle inscribed in
+the square, matching how the previous icon's round variant was built.
+Verified with the same circular/squircle/rounded-square mask simulation
+technique as HackDex-Tracker's fix, confirming the artwork survives every
+shape uncropped before this ever reached a real device.

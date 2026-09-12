@@ -43,10 +43,12 @@ One new section per phase, added in the same PR that ships the phase.
   follows the wallpaper instead of the seeded brand purple. On an
   API ≤ 30 device or with dynamic colour unavailable, the app falls back
   to the seeded purple scheme (`#5B21B6`-derived) without crashing.
-- [ ] **Launcher icon.** Home screen and app switcher show the ported
-  Capacitor icon (purple background, unchanged artwork) at every density
-  the device renders it at, adaptive-icon masking (circle/squircle/etc.)
-  included.
+- [ ] **Launcher icon.** Home screen and app switcher show the new icon
+  (red handheld + notepad on a blue background) at every density the
+  device renders it at, fully uncropped under adaptive-icon masking
+  (circle/squircle/rounded square/etc.) — see
+  `docs/implementation-decisions.md`, "New app icon" for how the safe
+  zone was verified before this manual check.
 - [ ] **Dark mode + edge-to-edge.** With the system in dark mode and gesture
   navigation, the status bar and navigation bar are transparent and the
   content isn't obscured by either.
