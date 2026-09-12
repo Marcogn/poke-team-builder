@@ -54,6 +54,29 @@ before acting — this file can go stale like any other.
   implemented rather than regressed. See `docs/STATUS.md`, "What's known
   to be missing" (filed under Phase 2).
 
+## Proposed improvements (approved by the user, 2026-09-12)
+
+Not yet planned in any phase document — these are new proposals raised
+during a cross-repo audit and approved for the backlog, not gaps found in
+existing docs. Each still needs its own design pass before implementation.
+
+- **Side-by-side team comparison.** A view that lines up the offensive/
+  defensive coverage of two or more saved teams to spot shared weaknesses
+  at a glance. A natural extension of the existing `AnalysisScreen`/
+  `AnalysisViewModel` and `CoverageGridTable`, staying within scope (it's
+  still coverage analysis, not a battle simulator).
+- **Cloud backup (Google Drive).** Both sibling apps (Hall of Memories,
+  ThePatientGamerHelper) already have automatic Drive backup;
+  CoverDex only has local SAF export/import. This is a real cost, not a
+  drop-in: it needs its own OAuth client registration (web + Android
+  client, SHA-1 pinned to the release keystore), the Credential
+  Manager/`AuthorizationClient` dance, and a hand-written
+  `HttpURLConnection` Drive REST client — see ThePatientGamerHelper's
+  `CLAUDE.md` "Phase 4" for the full shape of what this actually involves,
+  including its own still-open "OAuth Testing mode expires after 7 days"
+  limitation. Does not conflict with "no backend of any kind" (Drive
+  backup needs no backend, as the two sibling apps already demonstrate).
+
 ## Out of scope (tracked, not backlog)
 
 `ROADMAP.md`'s "Deliberately not planned" list (Play Store submission,
