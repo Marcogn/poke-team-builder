@@ -979,3 +979,70 @@ findings not yet acted on.
   skipped, never erroring or corrupting a later field — so this
   round-trips through the real client untouched, and through CoverDex's
   own parser as the type-override signal it always was.
+
+## New app icon
+
+The launcher icon carried over from the Capacitor build (see "The launcher
+icon is a verbatim copy..." above) was replaced with new, purpose-made
+artwork — a red Pokédex-style handheld next to a notepad and pencil,
+supplied as a single flattened 1254×1254 raster (art + solid blue
+background baked into one image, not separate foreground/background
+layers).
+
+The sibling repo HackDex-Tracker shipped this exact kind of asset once
+before and got it wrong: it treated a full-bleed raster as automatically
+exempt from adaptive-icon masking just because the foreground layer was
+transparent, and it wasn't — every launcher clips an `<adaptive-icon>`'s
+*composite* to its own mask shape (circle, squircle, rounded square, ...)
+regardless of which layer the visible art sits in, and real devices cut
+straight through that badge's artwork before it was fixed (see that
+repo's `docs/implementation-decisions.md`, "Adaptive icon safe zone").
+Rather than repeat that mistake, this asset was scaled and padded
+*before* ever reaching a device:
+
+1. Sample the source image's background color from its border pixels
+   (a uniform blue, `rgb(25, 129, 238)` give or take JPEG-ish noise).
+2. Find the farthest pixel from center that differs meaningfully from
+   that background color — the true visual extent of the artwork, not
+   just its bounding box.
+3. Binary-search for the largest scale factor that still leaves zero
+   pixels outside a simulated launcher mask differing from the
+   background color, checked against the three mask shapes real Android
+   launchers actually use: a full circle inscribed in the icon (the
+   stock/Pixel launcher), a squircle, and a rounded square.
+4. Resize the *entire* source image (art and background together) by
+   that factor and center it on a same-size canvas filled with the same
+   background color — since the fill color matches the source's own
+   background exactly, there is no visible seam.
+5. Verify by simulating all three mask shapes over the result and
+   confirming zero pixels outside each one differ from the background
+   color.
+
+The first pass of this fix (still visible in this file's git history)
+solved step 3 against Android's documented *theoretical* safe zone
+instead — a circle just 66dp in diameter, centered in the 108dp
+adaptive-icon canvas
+(<https://developer.android.com/develop/ui/views/launch/icon_design_adaptive>),
+which Google states is guaranteed safe under *any* mask shape a launcher
+could conceivably use. That produced a icon scaled to only ~61%, visibly
+smaller than it needed to be: this specific artwork's content already
+survives a full inscribed circle (the actual worst common shape) at
+essentially its original, unscaled proportions (the source image's
+farthest content pixel sits only ~0.2% past a full circle's radius). The
+huge gap between "provably safe against every mask Android could ever
+throw at it" and "safe against the masks real launchers actually ship"
+is exactly why the icon looked too small — recalculated against the
+three real shapes above, scale ~98% survives all of them with zero
+clipped pixels.
+
+`ic_launcher_background.png` is this composited, verified image at every
+density (`mdpi` 108px through `xxxhdpi` 432px); `ic_launcher.xml`/
+`ic_launcher_round.xml` set the foreground to `@android:color/transparent`
+and no longer reference an `ic_launcher_foreground.png` (deleted — there
+is no separate foreground art to inset). The legacy pre-API-26
+`ic_launcher.png` is the same composited image at the legacy sizes;
+`ic_launcher_round.png` is the same again masked to a circle inscribed in
+the square, matching how the previous icon's round variant was built.
+Verified with the same circular/squircle/rounded-square mask simulation
+technique as HackDex-Tracker's fix, confirming the artwork survives every
+shape uncropped before this ever reached a real device.
