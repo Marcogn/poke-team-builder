@@ -1005,21 +1005,35 @@ Rather than repeat that mistake, this asset was scaled and padded
 2. Find the farthest pixel from center that differs meaningfully from
    that background color — the true visual extent of the artwork, not
    just its bounding box.
-3. Compute the scale factor that brings that farthest pixel to just
-   inside Android's documented safe zone: a circle 66dp in diameter,
-   centered in the 108dp adaptive-icon canvas
-   (<https://developer.android.com/develop/ui/views/launch/icon_design_adaptive>).
-   Binary-searched for the largest scale (~61%) that still leaves zero
-   pixels outside that circle differing from the background color — the
-   icon is as large as it can be without starting to risk real cropping
-   on some launcher's mask shape, not an arbitrarily conservative
-   shrink.
+3. Binary-search for the largest scale factor that still leaves zero
+   pixels outside a simulated launcher mask differing from the
+   background color, checked against the three mask shapes real Android
+   launchers actually use: a full circle inscribed in the icon (the
+   stock/Pixel launcher), a squircle, and a rounded square.
 4. Resize the *entire* source image (art and background together) by
    that factor and center it on a same-size canvas filled with the same
    background color — since the fill color matches the source's own
    background exactly, there is no visible seam.
-5. Verify by simulating the 66dp/108dp circular mask over the result and
-   confirming zero pixels outside it differ from the background color.
+5. Verify by simulating all three mask shapes over the result and
+   confirming zero pixels outside each one differ from the background
+   color.
+
+The first pass of this fix (still visible in this file's git history)
+solved step 3 against Android's documented *theoretical* safe zone
+instead — a circle just 66dp in diameter, centered in the 108dp
+adaptive-icon canvas
+(<https://developer.android.com/develop/ui/views/launch/icon_design_adaptive>),
+which Google states is guaranteed safe under *any* mask shape a launcher
+could conceivably use. That produced a icon scaled to only ~61%, visibly
+smaller than it needed to be: this specific artwork's content already
+survives a full inscribed circle (the actual worst common shape) at
+essentially its original, unscaled proportions (the source image's
+farthest content pixel sits only ~0.2% past a full circle's radius). The
+huge gap between "provably safe against every mask Android could ever
+throw at it" and "safe against the masks real launchers actually ship"
+is exactly why the icon looked too small — recalculated against the
+three real shapes above, scale ~98% survives all of them with zero
+clipped pixels.
 
 `ic_launcher_background.png` is this composited, verified image at every
 density (`mdpi` 108px through `xxxhdpi` 432px); `ic_launcher.xml`/
