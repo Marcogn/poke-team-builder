@@ -21,8 +21,8 @@ android {
         // The Capacitor build shipped versionCode 1 / "1.0". This release must be installable
         // over it, and the major bump is honest: it drops the web app and does not carry user
         // data forward (see docs/implementation-decisions.md).
-        versionCode = 3
-        versionName = "2.0.1"
+        versionCode = 4
+        versionName = "2.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
