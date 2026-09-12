@@ -17,8 +17,10 @@ before editing anything, then read the phase plan you are executing.
   One new section per phase; one "Known regressions" entry per real bug found.
 - [`CHANGELOG.md`](CHANGELOG.md) — one entry per release, updated as you go.
 - [`docs/plan/phase-7-accuracy-and-customization.md`](docs/plan/phase-7-accuracy-and-customization.md)
-  — the next phase's plan: what is wrong with the engines today (measured,
-  with the dataset evidence) and exactly what to build.
+  — the most recently completed phase's plan (status: done): what was
+  wrong with the engines before it (measured, with the dataset evidence)
+  and exactly what was built to fix it. No phase 8 exists yet — no
+  further phase is currently planned.
 
 ## What this project is
 
