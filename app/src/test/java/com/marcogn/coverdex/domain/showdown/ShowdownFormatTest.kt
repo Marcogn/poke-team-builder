@@ -50,10 +50,15 @@ class ShowdownFormatTest {
 
     @Test
     fun `exports a complete team member with all fields`() {
-        val m = buildMember("Charizard", PokemonType.FIRE to PokemonType.FLYING, listOf(PokemonType.FIRE, PokemonType.GROUND, PokemonType.DRAGON, PokemonType.FIRE))
+        val m = buildMember(
+            "Charizard",
+            PokemonType.FIRE to PokemonType.FLYING,
+            listOf(PokemonType.FIRE, PokemonType.GROUND, PokemonType.DRAGON, PokemonType.FIRE),
+            ability = "Blaze",
+        ).copy(item = "Charcoal")
         val out = exportMemberToShowdown(m)
-        assertTrue(out.startsWith("Charizard @"))
-        assertTrue(out.contains("Ability:"))
+        assertTrue(out.startsWith("Charizard @ Charcoal"))
+        assertTrue(out.contains("Ability: Blaze"))
         assertTrue(out.contains("- fire-move"))
         assertTrue(out.contains("# Types: fire/flying"))
     }
