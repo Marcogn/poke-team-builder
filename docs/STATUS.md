@@ -2,8 +2,8 @@
 
 A snapshot of what's implemented, what's known to be missing, and any loose
 ends — written for whoever (human or agent) picks this project up next.
-Last verified 2026-09-12, after release `2.0.1` and the post-2.0.1
-Showdown import fix — the native rewrite described in
+Last verified 2026-09-12, after release `2.0.1`, the post-2.0.1
+Showdown import fix, and the launcher icon replacement — the native rewrite described in
 [`docs/plan/README.md`](plan/README.md) and its Phase 7 follow-up are both
 complete and shipped. Re-verify anything here
 before relying on it — this file goes
@@ -262,9 +262,9 @@ a backend).
 ## Known regressions
 
 See `docs/test-plan.md`'s per-phase "Known regressions" sections for the
-full, dated list of real bugs found and fixed (six from the Phase 7 audit,
-plus the 2026-09-12 Showdown import fix) — not repeated here to avoid two
-copies going stale independently. The one deliberate, non-regression gap: **upgrading from the old
+full, dated list of real bugs found and fixed (six from the
+post-migration review, plus the 2026-09-12 Showdown import fix) — not
+repeated here to avoid two copies going stale independently. The one deliberate, non-regression gap: **upgrading from the old
 Capacitor build loses saved teams and the custom roster.** This is a decided
 trade-off (see `docs/implementation-decisions.md`), not a bug, but it will
 read as one to a real user with existing data unless Phase 6's release notes
