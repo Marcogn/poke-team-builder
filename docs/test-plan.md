@@ -344,7 +344,14 @@ None yet.
 
 ### Known regressions
 
-None yet.
+- **Fixed 2026-09-12.** Importing a real Pokémon Showdown export containing
+  a `Level:`, `Tera Type:`, `Shiny: Yes`, or similar field this app doesn't
+  track corrupted the species (the parser mistook any unrecognized line
+  for a new species line) — see `docs/implementation-decisions.md`,
+  "Showdown format compatibility". Found by auditing the parser against
+  the real client's own grammar, not by manual testing. Re-run "Import
+  from pasted text" above with a Gen 9 set that includes `Tera Type:` to
+  confirm the species now imports correctly.
 
 ## Phase 6 — Release
 
