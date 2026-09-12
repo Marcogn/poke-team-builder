@@ -170,3 +170,5 @@ real bug found that way gets an entry in that file's "Known regressions".
 - **Phase 4 — Suggestions and generator**: ✅ done
 - **Phase 5 — Import/export and settings**: ✅ done
 - **Phase 6 — Release**: ✅ done
+- **Phase 7 — Engine accuracy, abilities/items, BST ranking**: ✅ done —
+  see [`phase-7-accuracy-and-customization.md`](phase-7-accuracy-and-customization.md)

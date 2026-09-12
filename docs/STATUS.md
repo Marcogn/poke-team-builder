@@ -2,17 +2,18 @@
 
 A snapshot of what's implemented, what's known to be missing, and any loose
 ends — written for whoever (human or agent) picks this project up next.
-Last verified 2026-09-06, at the end of Phase 7 (engine accuracy,
-abilities/items, BST-aware suggestions) — the native rewrite described in
+Last verified 2026-09-12, after release `2.0.1` and the post-2.0.1
+Showdown import fix — the native rewrite described in
 [`docs/plan/README.md`](plan/README.md) and its Phase 7 follow-up are both
-complete. Re-verify anything here
+complete and shipped. Re-verify anything here
 before relying on it — this file goes
 stale the moment someone ships a change without updating it. It complements,
 not replaces, the other docs: [`CLAUDE.md`](../CLAUDE.md) for rules and
 invariants, [`docs/plan/README.md`](plan/README.md) for the phase-by-phase
 build, [`docs/plan/native-spec.md`](plan/native-spec.md) for what the
-finished app must do, [`ROADMAP.md`](../ROADMAP.md) for the deferred
-backlog.
+finished app must do, [`ROADMAP.md`](../ROADMAP.md) for the deliberately
+out-of-scope backlog, and [`docs/next-steps.md`](next-steps.md) for the
+concise, cited list of remaining known work.
 
 ## What CoverDex is right now
 
@@ -42,12 +43,22 @@ abilities (plus an offensive gap) now affect the coverage calculation.
 That is the full feature set of `docs/plan/native-spec.md` plus Phase 7's
 accuracy/customization work; the native rewrite in
 [`docs/plan/README.md`](plan/README.md) is complete.
-Only the human repository owner's remaining, non-code steps are left:
-generating the real release keystore, setting the GitHub secrets it needs,
-and running the `Release` workflow for the first real `2.0.0` build — an
-agent session has no safe way to hold a signing key or write repository
-secrets on someone else's behalf (see
-[`docs/release-signing.md`](release-signing.md)).
+The real release keystore was generated and the GitHub secrets set by the
+repository owner (that part was never an agent's to do — see
+[`docs/release-signing.md`](release-signing.md)), and the `Release`
+workflow has since shipped `2.0.0` (2026-09-04) and `2.0.1` (2026-09-06) —
+see `CHANGELOG.md` and `app/build.gradle.kts` (`versionCode = 3`,
+`versionName = "2.0.1"`). `2.0.1` fixed a Surprise Me crash, a broken
+"Custom slots" constraint, coverage/generation running on the main thread,
+a missing "coverage is already solid" note, and a scoring/ability
+mismatch between the Analysis grid and Suggestions — see
+`docs/post-migration-review.md` for all six audited findings. Since then,
+an additional real bug was found and fixed (2026-09-12, not yet cut into a
+release): Showdown import corrupted the species on any real-world set
+carrying a `Level:`/`Tera Type:`/`Shiny:`-style line, because the parser
+treated any unrecognized line as a fresh species line — see
+`CHANGELOG.md`'s `[Unreleased]` section and
+`docs/implementation-decisions.md`, "Showdown format compatibility".
 
 ## What's implemented
 
@@ -154,7 +165,8 @@ secrets on someone else's behalf (see
   the `images/` half neither app's data model needs the same way here —
   CoverDex has no photos on a team slot.
 - **`./gradlew testDebugUnitTest lintDebug assembleDebug`** all green in one
-  invocation — 226 unit tests, 0 failures (verified locally with a
+  invocation — 336 unit tests as of 2026-09-12 (counted via
+  `grep -rc "@Test" app/src/test`), 0 failures (verified locally with a
   temporary, non-persistent SDK this session, same as every prior phase).
 - **The release pipeline** — `signingConfigs["release"]` (Phase 0) reads
   `RELEASE_KEYSTORE_PATH`/`RELEASE_KEYSTORE_PASSWORD`/`RELEASE_KEY_ALIAS`/
@@ -215,11 +227,10 @@ secrets on someone else's behalf (see
 
 Nothing from `docs/plan/native-spec.md` or `docs/plan/
 phase-7-accuracy-and-customization.md` — all six phases of
-[`docs/plan/README.md`](plan/README.md), plus Phase 7, are done. What
-remains is the repository owner's own, non-code responsibility (see
-above): generating the production signing keystore, setting the five
-GitHub Actions secrets, and running the first real `Release` workflow
-dispatch.
+[`docs/plan/README.md`](plan/README.md), plus Phase 7, are done, and the
+release pipeline has already shipped `2.0.0` and `2.0.1` (see above). The
+one open item is releasing the `[Unreleased]` Showdown import fix — see
+[`docs/next-steps.md`](next-steps.md).
 
 Also deliberately deferred (not a bug, see `docs/implementation-decisions.md`
 and, for the Phase 7 items, `docs/post-migration-review.md`'s "Phase 7
@@ -250,7 +261,10 @@ a backend).
 
 ## Known regressions
 
-None yet. The one deliberate, non-regression gap: **upgrading from the old
+See `docs/test-plan.md`'s per-phase "Known regressions" sections for the
+full, dated list of real bugs found and fixed (six from the Phase 7 audit,
+plus the 2026-09-12 Showdown import fix) — not repeated here to avoid two
+copies going stale independently. The one deliberate, non-regression gap: **upgrading from the old
 Capacitor build loses saved teams and the custom roster.** This is a decided
 trade-off (see `docs/implementation-decisions.md`), not a bug, but it will
 read as one to a real user with existing data unless Phase 6's release notes
@@ -260,7 +274,7 @@ say so plainly before they update.
 
 ```bash
 export ANDROID_HOME=...    # if a local SDK is available; otherwise rely on CI
-./gradlew testDebugUnitTest   # 329 tests as of Phase 7
+./gradlew testDebugUnitTest   # 336 tests as of 2026-09-12
 ./gradlew lintDebug
 ./gradlew assembleDebug
 ```
